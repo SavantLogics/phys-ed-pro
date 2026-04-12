@@ -1,4 +1,4 @@
-const CACHE_NAME = 'physed-pro-v1';
+const CACHE_NAME = 'physed-pro-v2';
 const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
@@ -15,12 +15,13 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// Network-first: try fresh copy, fall back to cache when offline
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).then(resp => {
+    fetch(e.request).then(resp => {
       const clone = resp.clone();
       caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
       return resp;
-    }))
+    }).catch(() => caches.match(e.request))
   );
 });

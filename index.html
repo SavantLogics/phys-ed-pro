@@ -221,6 +221,9 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
     <h3>No students in this period</h3>
     <p>Add students above to get started.</p>
   </div>
+  <div id="roster-clear-wrap" style="display:none; margin-top:16px; text-align:right;">
+    <button class="btn btn-danger" id="roster-clear-all">Clear All Students</button>
+  </div>
 </div>
 
 <!-- Settings Page -->
@@ -256,7 +259,6 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== DATABASE =====
 const DEFAULT_CODES = [
   { code: 'A', meaning: 'Absent', deduction: 10 },
   { code: 'N', meaning: 'Non-suit', deduction: 5 },
@@ -270,24 +272,36 @@ const DEFAULT_CODES = [
   { code: 'T', meaning: 'Tardy', deduction: 0 },
 ];
 
-// ===== STORAGE LAYER =====
 let _data = { students: [], entries: {}, settings: {}, _nextId: 1 };
 
 function _load() {
   try {
     const raw = localStorage.getItem('physed_pro_data');
-    if (raw) _data = JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      _data = parsed;
+    } else {
+      _data = { students: [], entries: {}, settings: {}, _nextId: 1 };
+    }
     if (!_data._nextId) _data._nextId = 1;
-    if (!_data.students) _data.students = [];
-    if (!_data.entries) _data.entries = {};
-    if (!_data.settings) _data.settings = {};
-  } catch(e) { console.error('Storage load error:', e); }
+    if (!Array.isArray(_data.students)) _data.students = [];
+    if (!_data.entries || typeof _data.entries !== 'object') _data.entries = {};
+    if (!_data.settings || typeof _data.settings !== 'object') _data.settings = {};
+    const maxId = _data.students.reduce((m, s) => Math.max(m, s.id || 0), 0);
+    if (_data._nextId <= maxId) _data._nextId = maxId + 1;
+  } catch(e) {
+    console.error('Storage load error — resetting:', e);
+    _data = { students: [], entries: {}, settings: {}, _nextId: 1 };
+  }
 }
 
 function _save() {
   try {
     localStorage.setItem('physed_pro_data', JSON.stringify(_data));
-  } catch(e) { console.error('Storage save error:', e); }
+  } catch(e) {
+    console.error('Storage save error:', e);
+    toast('Storage full — clear old browser data');
+  }
 }
 
 async function openDB() { _load(); }
@@ -347,7 +361,6 @@ async function dbDelete(store, key) {
   _save();
 }
 
-// ===== STATE =====
 let currentPage = 'dashboard';
 let currentPeriod = 1;
 let settings = { weeklyTotal: 100, codes: [...DEFAULT_CODES] };
@@ -387,7 +400,6 @@ function entryId(studentId, date) {
   return `${studentId}_${date}`;
 }
 
-// ===== SETTINGS =====
 async function loadSettings() {
   const s = await dbGet('settings', 'main');
   if (s) {
@@ -411,7 +423,6 @@ async function saveWeekStart() {
   await dbPut('settings', { key: 'weekStart', value: dateKey(weekStart) });
 }
 
-// ===== CALCULATIONS =====
 function calcPoints(codes, weekDates) {
   let total = settings.weeklyTotal;
   for (const date of weekDates) {
@@ -436,7 +447,6 @@ function calcComment(codes, weekDates) {
   return 'Good participation this week.';
 }
 
-// ===== NAVIGATION =====
 const navButtons = document.querySelectorAll('.nav button');
 const pages = document.querySelectorAll('.page');
 const periodTabs = document.querySelectorAll('#period-tabs button');
@@ -471,15 +481,12 @@ function renderCurrentPage() {
   else if (currentPage === 'settings') renderSettings();
 }
 
-// ===== DASHBOARD =====
 async function renderDashboard() {
   const allStudents = await dbGetAll('students');
   const allEntries = await dbGetAll('entries');
   const weekDates = getWeekDates(weekStart);
-
-  let totalStudents = allStudents.length;
-  let periodsInUse = new Set(allStudents.map(s => s.period)).size;
-
+  const totalStudents = allStudents.length;
+  const periodsInUse = new Set(allStudents.map(s => s.period)).size;
   const today = dateKey(new Date());
   const todayEntries = allEntries.filter(e => e.date === today).length;
 
@@ -494,11 +501,9 @@ async function renderDashboard() {
   for (let p = 1; p <= 6; p++) {
     const students = allStudents.filter(s => s.period === p);
     if (students.length === 0) continue;
-
     const periodEntries = allEntries.filter(e => e.period === p);
     const entryMap = {};
     periodEntries.forEach(e => { entryMap[e.id] = e.code; });
-
     let totalPts = 0;
     students.forEach(s => {
       const codes = {};
@@ -508,36 +513,29 @@ async function renderDashboard() {
       });
       totalPts += calcPoints(codes, weekDates);
     });
-
     const avgPts = students.length > 0 ? Math.round(totalPts / students.length) : 0;
-    periodsHtml += `
-      <div class="dash-period">
-        <h3>Period ${p}</h3>
-        <span class="stat">${students.length} students &middot; Avg: ${avgPts}/${settings.weeklyTotal} pts</span>
-      </div>`;
+    periodsHtml += `<div class="dash-period"><h3>Period ${p}</h3><span class="stat">${students.length} students &middot; Avg: ${avgPts}/${settings.weeklyTotal} pts</span></div>`;
   }
 
   if (!periodsHtml) {
     periodsHtml = '<div class="empty-state"><h3>Welcome to PhysEd Pro</h3><p>Head to the Roster tab to add students.</p></div>';
   }
-
   document.getElementById('dash-periods').innerHTML = periodsHtml;
 }
 
-// ===== ROSTER =====
 async function renderRoster() {
   const students = await dbGetByIndex('students', 'period', currentPeriod);
   students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
   const list = document.getElementById('student-list');
   const empty = document.getElementById('roster-empty');
-
+  const clearWrap = document.getElementById('roster-clear-wrap');
   if (students.length === 0) {
     list.innerHTML = '';
     empty.style.display = 'block';
+    clearWrap.style.display = 'none';
     return;
   }
-
+  clearWrap.style.display = 'block';
   empty.style.display = 'none';
   list.innerHTML = students.map((s, i) => `
     <div class="student-row">
@@ -554,6 +552,20 @@ async function renderRoster() {
 
 document.getElementById('roster-add').addEventListener('click', addStudent);
 document.getElementById('roster-name').addEventListener('keydown', e => { if (e.key === 'Enter') addStudent(); });
+document.getElementById('roster-clear-all').addEventListener('click', clearAllStudents);
+
+async function clearAllStudents() {
+  const students = await dbGetByIndex('students', 'period', currentPeriod);
+  if (students.length === 0) return;
+  if (!confirm(`Remove all ${students.length} students from Period ${currentPeriod}? Their entries will also be deleted.`)) return;
+  for (const s of students) {
+    const entries = await dbGetByIndex('entries', 'studentId', s.id);
+    for (const e of entries) await dbDelete('entries', e.id);
+    await dbDelete('students', s.id);
+  }
+  toast(`Period ${currentPeriod} cleared`);
+  renderRoster();
+}
 
 async function addStudent() {
   const nameEl = document.getElementById('roster-name');
@@ -561,7 +573,6 @@ async function addStudent() {
   const name = nameEl.value.trim();
   const sid = sidEl.value.trim();
   if (!name) { toast('Enter a student name'); return; }
-
   try {
     await dbPut('students', { name, sid, period: currentPeriod });
     nameEl.value = '';
@@ -598,7 +609,6 @@ window.deleteStudent = async function(id) {
   renderRoster();
 };
 
-// ===== ENTRY GRID =====
 let pickerTarget = null;
 
 document.getElementById('week-start').addEventListener('change', e => {
@@ -614,11 +624,9 @@ document.getElementById('week-start').addEventListener('change', e => {
 async function renderEntryGrid() {
   const students = await dbGetByIndex('students', 'period', currentPeriod);
   students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
   const thead = document.getElementById('entry-thead');
   const tbody = document.getElementById('entry-tbody');
   const empty = document.getElementById('entry-empty');
-
   if (students.length === 0) {
     thead.innerHTML = '';
     tbody.innerHTML = '';
@@ -626,14 +634,11 @@ async function renderEntryGrid() {
     return;
   }
   empty.style.display = 'none';
-
   const weekDates = getWeekDates(weekStart);
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-
   const periodEntries = await dbGetByIndex('entries', 'period', currentPeriod);
   const entryMap = {};
   periodEntries.forEach(e => { entryMap[e.id] = e.code; });
-
   let headerHtml = '<tr><th class="name-header">Student</th>';
   headerHtml += `<th colspan="5" class="week-header-cell">Week 1 (${formatDate(weekDates[0])})</th>`;
   headerHtml += `<th colspan="5" class="week-header-cell">Week 2 (${formatDate(weekDates[5])})</th>`;
@@ -644,7 +649,6 @@ async function renderEntryGrid() {
   }
   headerHtml += '<th class="pts-header"></th><th></th></tr>';
   thead.innerHTML = headerHtml;
-
   let rowsHtml = '';
   for (const s of students) {
     const codes = {};
@@ -652,22 +656,18 @@ async function renderEntryGrid() {
       const eid = entryId(s.id, dateKey(d));
       if (entryMap[eid]) codes[dateKey(d)] = entryMap[eid];
     });
-
     const pts = calcPoints(codes, weekDates);
     const comment = calcComment(codes, weekDates);
     const ptsClass = pts >= settings.weeklyTotal ? 'full' : pts >= settings.weeklyTotal * 0.7 ? 'partial' : 'low';
-
     rowsHtml += `<tr><td class="name-cell" title="${escHtml(s.name)}">${escHtml(s.name)}</td>`;
     for (const d of weekDates) {
       const dk = dateKey(d);
       const code = codes[dk] || '';
       rowsHtml += `<td class="code-cell" data-code="${code}" data-student="${s.id}" data-date="${dk}">${code}</td>`;
     }
-    rowsHtml += `<td class="pts-cell ${ptsClass}">${pts}</td>`;
-    rowsHtml += `<td class="comment-cell">${escHtml(comment)}</td></tr>`;
+    rowsHtml += `<td class="pts-cell ${ptsClass}">${pts}</td><td class="comment-cell">${escHtml(comment)}</td></tr>`;
   }
   tbody.innerHTML = rowsHtml;
-
   tbody.querySelectorAll('.code-cell').forEach(cell => {
     cell.addEventListener('click', () => {
       const studentId = parseInt(cell.dataset.student);
@@ -678,7 +678,6 @@ async function renderEntryGrid() {
   });
 }
 
-// ===== CODE PICKER =====
 const modal = document.getElementById('code-modal');
 const pickerInfo = document.getElementById('picker-info');
 const pickerCodes = document.getElementById('picker-codes');
@@ -688,18 +687,15 @@ function openPicker(studentId, date, name, currentCode) {
   pickerTarget = { studentId, date };
   const d = new Date(date + 'T00:00:00');
   pickerInfo.textContent = `${name} — ${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
-
   pickerCodes.innerHTML = settings.codes.map(c => `
     <button class="code-btn ${currentCode === c.code ? 'selected' : ''}" data-code="${c.code}">
       ${c.code}
       <span class="code-label">${c.deduction > 0 ? '-' + c.deduction : c.meaning}</span>
     </button>
   `).join('');
-
   pickerCodes.querySelectorAll('.code-btn').forEach(btn => {
     btn.addEventListener('click', () => selectCode(btn.dataset.code));
   });
-
   modal.classList.add('open');
 }
 
@@ -721,25 +717,15 @@ pickerClear.addEventListener('click', async () => {
 async function selectCode(code) {
   if (!pickerTarget) return;
   const eid = entryId(pickerTarget.studentId, pickerTarget.date);
-  await dbPut('entries', {
-    id: eid,
-    studentId: pickerTarget.studentId,
-    period: currentPeriod,
-    date: pickerTarget.date,
-    code: code
-  });
+  await dbPut('entries', { id: eid, studentId: pickerTarget.studentId, period: currentPeriod, date: pickerTarget.date, code });
   closePicker();
   renderEntryGrid();
 }
 
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closePicker();
-});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePicker(); });
 
-// ===== SETTINGS =====
 function renderSettings() {
   document.getElementById('weekly-pts-total').value = settings.weeklyTotal;
-
   const container = document.getElementById('code-settings');
   container.innerHTML = settings.codes.map((c, i) => `
     <div class="setting-row">
@@ -748,11 +734,13 @@ function renderSettings() {
       <input type="number" min="0" max="100" value="${c.deduction}" data-index="${i}" class="deduction-input" />
     </div>
   `).join('');
-
   container.querySelectorAll('.deduction-input').forEach(input => {
     input.addEventListener('change', async () => {
       const idx = parseInt(input.dataset.index);
-      settings.codes[idx].deduction = parseInt(input.value) || 0;
+      let val = parseInt(input.value);
+      if (isNaN(val) || val < 0) val = 0;
+      if (val > settings.weeklyTotal) { val = settings.weeklyTotal; input.value = val; }
+      settings.codes[idx].deduction = val;
       await saveSettings();
       toast('Settings saved');
     });
@@ -760,12 +748,14 @@ function renderSettings() {
 }
 
 document.getElementById('weekly-pts-total').addEventListener('change', async e => {
-  settings.weeklyTotal = parseInt(e.target.value) || 100;
+  const val = parseInt(e.target.value);
+  if (isNaN(val) || val < 1) { e.target.value = settings.weeklyTotal; toast('Must be at least 1'); return; }
+  settings.weeklyTotal = Math.min(val, 1000);
+  e.target.value = settings.weeklyTotal;
   await saveSettings();
   toast('Weekly total updated');
 });
 
-// ===== UTILITIES =====
 function escHtml(s) {
   const d = document.createElement('div');
   d.textContent = s;
@@ -779,19 +769,16 @@ function toast(msg) {
   setTimeout(() => t.classList.remove('show'), 2000);
 }
 
-// ===== OFFLINE INDICATOR =====
 function updateOnline() {
   document.getElementById('offline-badge').style.display = navigator.onLine ? 'none' : 'inline';
 }
 window.addEventListener('online', updateOnline);
 window.addEventListener('offline', updateOnline);
 
-// ===== SERVICE WORKER =====
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
-// ===== INIT =====
 async function init() {
   await openDB();
   await loadSettings();
