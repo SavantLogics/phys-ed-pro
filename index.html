@@ -23,11 +23,32 @@
   --blue: #3498db;
   --radius: 8px;
   --code-size: 42px;
+  --border: #2a2a4a;
+  --input-border: #333;
+  --row-alt: var(--row-alt);
+  --name-cell-bg: var(--surface);
+}
+html.light {
+  --bg: #f0f2f5;
+  --surface: #ffffff;
+  --surface2: #e8ecf1;
+  --accent: #d6336c;
+  --accent-hover: #c2255c;
+  --text: #1a1a2e;
+  --text-dim: #666;
+  --green: #20a85a;
+  --yellow: #e67e22;
+  --red: #c0392b;
+  --blue: #2980b9;
+  --border: #d0d5dd;
+  --input-border: #ccc;
+  --row-alt: rgba(0,0,0,0.02);
+  --name-cell-bg: #ffffff;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; overflow-x: hidden; }
 button { font-family: inherit; cursor: pointer; border: none; border-radius: var(--radius); }
-input, select { font-family: inherit; border-radius: var(--radius); border: 1px solid #333; background: var(--surface); color: var(--text); padding: 8px 12px; font-size: 14px; }
+input, select { font-family: inherit; border-radius: var(--radius); border: 1px solid var(--input-border); background: var(--surface); color: var(--text); padding: 8px 12px; font-size: 14px; }
 input:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
 
 /* Top Bar */
@@ -36,7 +57,7 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 .topbar-right { display: flex; gap: 8px; }
 
 /* Nav */
-.nav { display: flex; gap: 0; background: var(--surface); border-bottom: 1px solid #333; overflow-x: auto; -webkit-overflow-scrolling: touch; position: sticky; top: 52px; z-index: 99; }
+.nav { display: flex; gap: 0; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch; position: sticky; top: 52px; z-index: 99; }
 .nav button { flex: 1; min-width: 80px; padding: 10px 16px; background: transparent; color: var(--text-dim); font-size: 13px; font-weight: 600; border-radius: 0; border-bottom: 3px solid transparent; white-space: nowrap; }
 .nav button.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(233,69,96,0.08); }
 
@@ -82,13 +103,13 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 .grid-controls label { font-size: 13px; color: var(--text-dim); }
 .grid-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius); }
 .grid-table { width: 100%; border-collapse: collapse; min-width: 700px; }
-.grid-table th, .grid-table td { padding: 6px 4px; text-align: center; border: 1px solid #2a2a4a; font-size: 13px; }
+.grid-table th, .grid-table td { padding: 6px 4px; text-align: center; border: 1px solid var(--border); font-size: 13px; }
 .grid-table thead th { background: var(--surface2); color: var(--text-dim); font-size: 11px; font-weight: 600; position: sticky; top: 0; z-index: 2; }
 .grid-table thead th.day-header { min-width: 48px; }
 .grid-table thead th.name-header { text-align: left; min-width: 140px; position: sticky; left: 0; z-index: 3; background: var(--surface2); }
 .grid-table thead th.pts-header { min-width: 52px; }
 .grid-table tbody td.name-cell { text-align: left; font-weight: 500; position: sticky; left: 0; background: var(--surface); z-index: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
-.grid-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.grid-table tbody tr:nth-child(even) td { background: var(--row-alt); }
 .grid-table tbody tr:nth-child(even) td.name-cell { background: var(--surface); }
 
 /* Code Cells */
@@ -125,7 +146,7 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 /* Settings */
 .settings-section { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
 .settings-section h3 { font-size: 15px; margin-bottom: 12px; color: var(--accent); }
-.setting-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #2a2a4a; }
+.setting-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
 .setting-row:last-child { border-bottom: none; }
 .setting-row .code-tag { font-weight: 700; min-width: 40px; font-size: 15px; }
 .setting-row .meaning { flex: 1; font-size: 13px; color: var(--text-dim); }
@@ -149,33 +170,44 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
   .grid-table th, .grid-table td { padding: 4px 2px; font-size: 12px; }
 }
 
-/* Adjustments edit input */
-.adj-input { width: 60px; text-align: center; font-size: 14px; font-weight: 700; background: transparent; border: 1px solid #444; color: var(--text); padding: 2px 4px; }
+.adj-input { width: 60px; text-align: center; font-size: 14px; font-weight: 700; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 2px 4px; }
 .adj-input:focus { border-color: var(--accent); }
-
-/* Week header row */
 .week-header-cell { background: var(--accent) !important; color: #fff !important; font-weight: 700 !important; font-size: 12px !important; }
+
+/* Theme Toggle */
+.theme-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; -webkit-user-select: none; }
+.theme-toggle .icon { font-size: 16px; line-height: 1; }
+.toggle-track { width: 40px; height: 22px; background: var(--surface2); border-radius: 11px; position: relative; transition: background 0.3s; border: 1px solid var(--border); }
+.toggle-thumb { width: 18px; height: 18px; background: var(--accent); border-radius: 50%; position: absolute; top: 1px; left: 1px; transition: transform 0.3s; }
+html.light .toggle-thumb { transform: translateX(18px); }
+
+/* Export */
+.match-yes { color: var(--green); }
+.match-no { color: var(--red); font-style: italic; }
+.export-pts { font-weight: 700; }
 </style>
 </head>
 <body>
 
-<!-- Top Bar -->
 <div class="topbar">
   <h1>PhysEd Pro</h1>
   <div class="topbar-right">
     <span id="offline-badge" style="font-size:11px;color:var(--green);display:none;">OFFLINE</span>
+    <div class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode">
+      <span class="icon" id="theme-icon">🌙</span>
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    </div>
   </div>
 </div>
 
-<!-- Navigation -->
 <div class="nav">
   <button class="active" data-page="dashboard">Dashboard</button>
   <button data-page="entry">Entry Grid</button>
   <button data-page="roster">Roster</button>
+  <button data-page="export">Export</button>
   <button data-page="settings">Settings</button>
 </div>
 
-<!-- Period Tabs (shown on entry + roster pages) -->
 <div class="period-tabs" id="period-tabs">
   <button class="active" data-period="1">Per. 1</button>
   <button data-period="2">Per. 2</button>
@@ -185,13 +217,13 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
   <button data-period="6">Per. 6</button>
 </div>
 
-<!-- Dashboard Page -->
+<!-- Dashboard -->
 <div class="page active" id="page-dashboard">
   <div class="dash-cards" id="dash-cards"></div>
   <div id="dash-periods"></div>
 </div>
 
-<!-- Entry Grid Page -->
+<!-- Entry Grid -->
 <div class="page" id="page-entry">
   <div class="grid-controls">
     <label>Week of:</label>
@@ -209,7 +241,7 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
   </div>
 </div>
 
-<!-- Roster Page -->
+<!-- Roster -->
 <div class="page" id="page-roster">
   <div class="roster-header">
     <input type="text" id="roster-name" placeholder="Student Name" />
@@ -226,7 +258,48 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
   </div>
 </div>
 
-<!-- Settings Page -->
+<!-- Export -->
+<div class="page" id="page-export">
+  <div class="settings-section">
+    <h3>Step 1: Import Canvas Roster</h3>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Download your gradebook from Canvas as CSV, then upload it here. The app matches students by ID and fills in their weekly points.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <label class="btn btn-accent" style="cursor:pointer;">
+        Upload CSV
+        <input type="file" id="canvas-file" accept=".csv" style="display:none;" />
+      </label>
+      <span style="color:var(--text-dim);font-size:13px;">or</span>
+      <button class="btn btn-outline" id="canvas-paste-btn">Paste CSV Data</button>
+    </div>
+    <textarea id="canvas-paste" placeholder="Paste CSV contents here..." style="display:none;width:100%;height:120px;margin-top:10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:10px;font-size:13px;font-family:monospace;resize:vertical;"></textarea>
+    <div style="display:none;margin-top:8px;" id="canvas-paste-actions">
+      <button class="btn btn-accent btn-sm" id="canvas-paste-import">Import Pasted Data</button>
+    </div>
+  </div>
+
+  <div class="settings-section" id="export-preview-section" style="display:none;">
+    <h3>Step 2: Review &amp; Export</h3>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+      <span id="export-match-stats" style="font-size:13px;color:var(--text-dim);"></span>
+      <button class="btn btn-accent" id="export-download">Download Canvas CSV</button>
+    </div>
+    <div class="grid-wrap">
+      <table class="grid-table" id="export-table">
+        <thead id="export-thead"></thead>
+        <tbody id="export-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="settings-section" id="export-empty">
+    <div class="empty-state">
+      <h3>No Canvas roster loaded</h3>
+      <p>Upload or paste your Canvas gradebook CSV above to get started.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
 <div class="page" id="page-settings">
   <div class="settings-section">
     <h3>Weekly Points Total</h3>
@@ -255,7 +328,6 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
@@ -277,12 +349,8 @@ let _data = { students: [], entries: {}, settings: {}, _nextId: 1 };
 function _load() {
   try {
     const raw = localStorage.getItem('physed_pro_data');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      _data = parsed;
-    } else {
-      _data = { students: [], entries: {}, settings: {}, _nextId: 1 };
-    }
+    if (raw) { _data = JSON.parse(raw); }
+    else { _data = { students: [], entries: {}, settings: {}, _nextId: 1 }; }
     if (!_data._nextId) _data._nextId = 1;
     if (!Array.isArray(_data.students)) _data.students = [];
     if (!_data.entries || typeof _data.entries !== 'object') _data.entries = {};
@@ -296,68 +364,47 @@ function _load() {
 }
 
 function _save() {
-  try {
-    localStorage.setItem('physed_pro_data', JSON.stringify(_data));
-  } catch(e) {
-    console.error('Storage save error:', e);
-    toast('Storage full — clear old browser data');
-  }
+  try { localStorage.setItem('physed_pro_data', JSON.stringify(_data)); }
+  catch(e) { console.error('Storage save error:', e); toast('Storage full — clear old browser data'); }
 }
 
 async function openDB() { _load(); }
-
 async function dbGet(store, key) {
   if (store === 'settings') return _data.settings[key] || undefined;
   if (store === 'students') return _data.students.find(s => s.id === key);
   if (store === 'entries') return _data.entries[key] ? { id: key, ..._data.entries[key] } : undefined;
 }
-
 async function dbGetAll(store) {
   if (store === 'students') return [..._data.students];
   if (store === 'entries') return Object.entries(_data.entries).map(([id, e]) => ({ id, ...e }));
   if (store === 'settings') return Object.values(_data.settings);
   return [];
 }
-
 async function dbGetByIndex(store, index, value) {
   if (store === 'students' && index === 'period') return _data.students.filter(s => s.period === value);
-  if (store === 'entries' && index === 'period') {
+  if (store === 'entries' && index === 'period')
     return Object.entries(_data.entries).filter(([, e]) => e.period === value).map(([id, e]) => ({ id, ...e }));
-  }
-  if (store === 'entries' && index === 'studentId') {
+  if (store === 'entries' && index === 'studentId')
     return Object.entries(_data.entries).filter(([, e]) => e.studentId === value).map(([id, e]) => ({ id, ...e }));
-  }
   return [];
 }
-
 async function dbPut(store, data) {
-  if (store === 'settings') {
-    _data.settings[data.key] = data;
-  } else if (store === 'students') {
-    if (!data.id) {
-      data.id = _data._nextId++;
-      _data.students.push(data);
-    } else {
+  if (store === 'settings') { _data.settings[data.key] = data; }
+  else if (store === 'students') {
+    if (!data.id) { data.id = _data._nextId++; _data.students.push(data); }
+    else {
       const idx = _data.students.findIndex(s => s.id === data.id);
-      if (idx >= 0) _data.students[idx] = data;
-      else _data.students.push(data);
+      if (idx >= 0) _data.students[idx] = data; else _data.students.push(data);
     }
   } else if (store === 'entries') {
-    const { id, ...rest } = data;
-    _data.entries[id] = rest;
+    const { id, ...rest } = data; _data.entries[id] = rest;
   }
-  _save();
-  return data.id;
+  _save(); return data.id;
 }
-
 async function dbDelete(store, key) {
-  if (store === 'students') {
-    _data.students = _data.students.filter(s => s.id !== key);
-  } else if (store === 'entries') {
-    delete _data.entries[key];
-  } else if (store === 'settings') {
-    delete _data.settings[key];
-  }
+  if (store === 'students') _data.students = _data.students.filter(s => s.id !== key);
+  else if (store === 'entries') delete _data.entries[key];
+  else if (store === 'settings') delete _data.settings[key];
   _save();
 }
 
@@ -367,75 +414,41 @@ let settings = { weeklyTotal: 100, codes: [...DEFAULT_CODES] };
 let weekStart = getMonday(new Date());
 
 function getMonday(d) {
-  const dt = new Date(d);
-  const day = dt.getDay();
-  const diff = dt.getDate() - day + (day === 0 ? -6 : 1);
-  dt.setDate(diff);
-  dt.setHours(0,0,0,0);
-  return dt;
+  const dt = new Date(d); const day = dt.getDay();
+  dt.setDate(dt.getDate() - day + (day === 0 ? -6 : 1));
+  dt.setHours(0,0,0,0); return dt;
 }
-
-function addDays(d, n) {
-  const r = new Date(d);
-  r.setDate(r.getDate() + n);
-  return r;
-}
-
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
 function getWeekDates(start) {
   const dates = [];
   for (let i = 0; i < 5; i++) dates.push(addDays(start, i));
   for (let i = 7; i < 12; i++) dates.push(addDays(start, i));
   return dates;
 }
-
-function formatDate(d) {
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function dateKey(d) {
-  return d.toISOString().split('T')[0];
-}
-
-function entryId(studentId, date) {
-  return `${studentId}_${date}`;
-}
+function formatDate(d) { return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+function dateKey(d) { return d.toISOString().split('T')[0]; }
+function entryId(studentId, date) { return `${studentId}_${date}`; }
 
 async function loadSettings() {
   const s = await dbGet('settings', 'main');
-  if (s) {
-    settings = s.value;
-    if (!settings.codes) settings.codes = [...DEFAULT_CODES];
-    if (!settings.weeklyTotal) settings.weeklyTotal = 100;
-  }
+  if (s) { settings = s.value; if (!settings.codes) settings.codes = [...DEFAULT_CODES]; if (!settings.weeklyTotal) settings.weeklyTotal = 100; }
 }
-
-async function saveSettings() {
-  await dbPut('settings', { key: 'main', value: settings });
-}
-
+async function saveSettings() { await dbPut('settings', { key: 'main', value: settings }); }
 async function loadWeekStart() {
   const w = await dbGet('settings', 'weekStart');
   if (w) weekStart = new Date(w.value);
   document.getElementById('week-start').value = dateKey(weekStart);
 }
-
-async function saveWeekStart() {
-  await dbPut('settings', { key: 'weekStart', value: dateKey(weekStart) });
-}
+async function saveWeekStart() { await dbPut('settings', { key: 'weekStart', value: dateKey(weekStart) }); }
 
 function calcPoints(codes, weekDates) {
   let total = settings.weeklyTotal;
   for (const date of weekDates) {
-    const dk = dateKey(date);
-    const code = codes[dk];
-    if (code) {
-      const def = settings.codes.find(c => c.code === code);
-      if (def) total -= def.deduction;
-    }
+    const code = codes[dateKey(date)];
+    if (code) { const def = settings.codes.find(c => c.code === code); if (def) total -= def.deduction; }
   }
   return Math.max(0, total);
 }
-
 function calcComment(codes, weekDates) {
   const allCodes = weekDates.map(d => codes[dateKey(d)]).filter(Boolean);
   if (allCodes.length === 0) return 'No entries this week.';
@@ -464,7 +477,6 @@ navButtons.forEach(btn => {
     renderCurrentPage();
   });
 });
-
 periodTabs.forEach(btn => {
   btn.addEventListener('click', () => {
     currentPeriod = parseInt(btn.dataset.period);
@@ -473,11 +485,11 @@ periodTabs.forEach(btn => {
     renderCurrentPage();
   });
 });
-
 function renderCurrentPage() {
   if (currentPage === 'dashboard') renderDashboard();
   else if (currentPage === 'entry') renderEntryGrid();
   else if (currentPage === 'roster') renderRoster();
+  else if (currentPage === 'export') renderExport();
   else if (currentPage === 'settings') renderSettings();
 }
 
@@ -485,42 +497,29 @@ async function renderDashboard() {
   const allStudents = await dbGetAll('students');
   const allEntries = await dbGetAll('entries');
   const weekDates = getWeekDates(weekStart);
-  const totalStudents = allStudents.length;
-  const periodsInUse = new Set(allStudents.map(s => s.period)).size;
   const today = dateKey(new Date());
   const todayEntries = allEntries.filter(e => e.date === today).length;
-
   document.getElementById('dash-cards').innerHTML = `
-    <div class="dash-card"><div class="num">${totalStudents}</div><div class="label">Total Students</div></div>
-    <div class="dash-card"><div class="num">${periodsInUse}</div><div class="label">Active Periods</div></div>
+    <div class="dash-card"><div class="num">${allStudents.length}</div><div class="label">Total Students</div></div>
+    <div class="dash-card"><div class="num">${new Set(allStudents.map(s => s.period)).size}</div><div class="label">Active Periods</div></div>
     <div class="dash-card"><div class="num">${todayEntries}</div><div class="label">Today's Entries</div></div>
     <div class="dash-card"><div class="num">${settings.weeklyTotal}</div><div class="label">Weekly Pts Max</div></div>
   `;
-
   let periodsHtml = '';
   for (let p = 1; p <= 6; p++) {
     const students = allStudents.filter(s => s.period === p);
-    if (students.length === 0) continue;
-    const periodEntries = allEntries.filter(e => e.period === p);
+    if (!students.length) continue;
     const entryMap = {};
-    periodEntries.forEach(e => { entryMap[e.id] = e.code; });
+    allEntries.filter(e => e.period === p).forEach(e => { entryMap[e.id] = e.code; });
     let totalPts = 0;
     students.forEach(s => {
       const codes = {};
-      weekDates.forEach(d => {
-        const eid = entryId(s.id, dateKey(d));
-        if (entryMap[eid]) codes[dateKey(d)] = entryMap[eid];
-      });
+      weekDates.forEach(d => { const eid = entryId(s.id, dateKey(d)); if (entryMap[eid]) codes[dateKey(d)] = entryMap[eid]; });
       totalPts += calcPoints(codes, weekDates);
     });
-    const avgPts = students.length > 0 ? Math.round(totalPts / students.length) : 0;
-    periodsHtml += `<div class="dash-period"><h3>Period ${p}</h3><span class="stat">${students.length} students &middot; Avg: ${avgPts}/${settings.weeklyTotal} pts</span></div>`;
+    periodsHtml += `<div class="dash-period"><h3>Period ${p}</h3><span class="stat">${students.length} students &middot; Avg: ${Math.round(totalPts / students.length)}/${settings.weeklyTotal} pts</span></div>`;
   }
-
-  if (!periodsHtml) {
-    periodsHtml = '<div class="empty-state"><h3>Welcome to PhysEd Pro</h3><p>Head to the Roster tab to add students.</p></div>';
-  }
-  document.getElementById('dash-periods').innerHTML = periodsHtml;
+  document.getElementById('dash-periods').innerHTML = periodsHtml || '<div class="empty-state"><h3>Welcome to PhysEd Pro</h3><p>Head to the Roster tab to add students.</p></div>';
 }
 
 async function renderRoster() {
@@ -529,14 +528,8 @@ async function renderRoster() {
   const list = document.getElementById('student-list');
   const empty = document.getElementById('roster-empty');
   const clearWrap = document.getElementById('roster-clear-wrap');
-  if (students.length === 0) {
-    list.innerHTML = '';
-    empty.style.display = 'block';
-    clearWrap.style.display = 'none';
-    return;
-  }
-  clearWrap.style.display = 'block';
-  empty.style.display = 'none';
+  if (!students.length) { list.innerHTML = ''; empty.style.display = 'block'; clearWrap.style.display = 'none'; return; }
+  clearWrap.style.display = 'block'; empty.style.display = 'none';
   list.innerHTML = students.map((s, i) => `
     <div class="student-row">
       <span class="num">${i + 1}</span>
@@ -546,8 +539,7 @@ async function renderRoster() {
         <button class="btn btn-sm btn-outline" onclick="editStudent(${s.id})">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deleteStudent(${s.id})">Del</button>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 document.getElementById('roster-add').addEventListener('click', addStudent);
@@ -556,69 +548,45 @@ document.getElementById('roster-clear-all').addEventListener('click', clearAllSt
 
 async function clearAllStudents() {
   const students = await dbGetByIndex('students', 'period', currentPeriod);
-  if (students.length === 0) return;
+  if (!students.length) return;
   if (!confirm(`Remove all ${students.length} students from Period ${currentPeriod}? Their entries will also be deleted.`)) return;
   for (const s of students) {
-    const entries = await dbGetByIndex('entries', 'studentId', s.id);
-    for (const e of entries) await dbDelete('entries', e.id);
+    for (const e of await dbGetByIndex('entries', 'studentId', s.id)) await dbDelete('entries', e.id);
     await dbDelete('students', s.id);
   }
-  toast(`Period ${currentPeriod} cleared`);
-  renderRoster();
+  toast(`Period ${currentPeriod} cleared`); renderRoster();
 }
 
 async function addStudent() {
   const nameEl = document.getElementById('roster-name');
   const sidEl = document.getElementById('roster-sid');
-  const name = nameEl.value.trim();
-  const sid = sidEl.value.trim();
+  const name = nameEl.value.trim(); const sid = sidEl.value.trim();
   if (!name) { toast('Enter a student name'); return; }
   try {
     await dbPut('students', { name, sid, period: currentPeriod });
-    nameEl.value = '';
-    sidEl.value = '';
-    nameEl.focus();
-    toast('Student added');
-    renderRoster();
-  } catch(e) {
-    console.error('Add student error:', e);
-    toast('Error adding student — check console');
-  }
+    nameEl.value = ''; sidEl.value = ''; nameEl.focus();
+    toast('Student added'); renderRoster();
+  } catch(e) { toast('Error adding student — check console'); }
 }
 
 window.editStudent = async function(id) {
-  const s = await dbGet('students', id);
-  if (!s) return;
-  const name = prompt('Student Name:', s.name);
-  if (name === null) return;
-  const sid = prompt('SSI ID:', s.sid || '');
-  if (sid === null) return;
-  s.name = name.trim() || s.name;
-  s.sid = sid.trim();
-  await dbPut('students', s);
-  toast('Student updated');
-  renderRoster();
+  const s = await dbGet('students', id); if (!s) return;
+  const name = prompt('Student Name:', s.name); if (name === null) return;
+  const sid = prompt('SSI ID:', s.sid || ''); if (sid === null) return;
+  s.name = name.trim() || s.name; s.sid = sid.trim();
+  await dbPut('students', s); toast('Student updated'); renderRoster();
 };
-
 window.deleteStudent = async function(id) {
   if (!confirm('Remove this student? Their entries will also be deleted.')) return;
   await dbDelete('students', id);
-  const entries = await dbGetByIndex('entries', 'studentId', id);
-  for (const e of entries) await dbDelete('entries', e.id);
-  toast('Student removed');
-  renderRoster();
+  for (const e of await dbGetByIndex('entries', 'studentId', id)) await dbDelete('entries', e.id);
+  toast('Student removed'); renderRoster();
 };
 
 let pickerTarget = null;
-
 document.getElementById('week-start').addEventListener('change', e => {
   const d = new Date(e.target.value + 'T00:00:00');
-  if (!isNaN(d)) {
-    weekStart = getMonday(d);
-    e.target.value = dateKey(weekStart);
-    saveWeekStart();
-    renderEntryGrid();
-  }
+  if (!isNaN(d)) { weekStart = getMonday(d); e.target.value = dateKey(weekStart); saveWeekStart(); renderEntryGrid(); }
 });
 
 async function renderEntryGrid() {
@@ -627,53 +595,31 @@ async function renderEntryGrid() {
   const thead = document.getElementById('entry-thead');
   const tbody = document.getElementById('entry-tbody');
   const empty = document.getElementById('entry-empty');
-  if (students.length === 0) {
-    thead.innerHTML = '';
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
+  if (!students.length) { thead.innerHTML = ''; tbody.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   const weekDates = getWeekDates(weekStart);
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-  const periodEntries = await dbGetByIndex('entries', 'period', currentPeriod);
   const entryMap = {};
-  periodEntries.forEach(e => { entryMap[e.id] = e.code; });
-  let headerHtml = '<tr><th class="name-header">Student</th>';
-  headerHtml += `<th colspan="5" class="week-header-cell">Week 1 (${formatDate(weekDates[0])})</th>`;
-  headerHtml += `<th colspan="5" class="week-header-cell">Week 2 (${formatDate(weekDates[5])})</th>`;
-  headerHtml += '<th class="pts-header">Pts</th><th>Comment</th></tr>';
-  headerHtml += '<tr><th class="name-header"></th>';
-  for (let i = 0; i < 10; i++) {
-    headerHtml += `<th class="day-header">${dayNames[i % 5]}<br><span style="font-size:10px;font-weight:400;">${formatDate(weekDates[i])}</span></th>`;
-  }
-  headerHtml += '<th class="pts-header"></th><th></th></tr>';
-  thead.innerHTML = headerHtml;
-  let rowsHtml = '';
+  (await dbGetByIndex('entries', 'period', currentPeriod)).forEach(e => { entryMap[e.id] = e.code; });
+  let hdr = `<tr><th class="name-header">Student</th><th colspan="5" class="week-header-cell">Week 1 (${formatDate(weekDates[0])})</th><th colspan="5" class="week-header-cell">Week 2 (${formatDate(weekDates[5])})</th><th class="pts-header">Pts</th><th>Comment</th></tr><tr><th class="name-header"></th>`;
+  for (let i = 0; i < 10; i++) hdr += `<th class="day-header">${dayNames[i%5]}<br><span style="font-size:10px;font-weight:400;">${formatDate(weekDates[i])}</span></th>`;
+  hdr += '<th class="pts-header"></th><th></th></tr>';
+  thead.innerHTML = hdr;
+  let rows = '';
   for (const s of students) {
     const codes = {};
-    weekDates.forEach(d => {
-      const eid = entryId(s.id, dateKey(d));
-      if (entryMap[eid]) codes[dateKey(d)] = entryMap[eid];
-    });
+    weekDates.forEach(d => { const eid = entryId(s.id, dateKey(d)); if (entryMap[eid]) codes[dateKey(d)] = entryMap[eid]; });
     const pts = calcPoints(codes, weekDates);
-    const comment = calcComment(codes, weekDates);
-    const ptsClass = pts >= settings.weeklyTotal ? 'full' : pts >= settings.weeklyTotal * 0.7 ? 'partial' : 'low';
-    rowsHtml += `<tr><td class="name-cell" title="${escHtml(s.name)}">${escHtml(s.name)}</td>`;
-    for (const d of weekDates) {
-      const dk = dateKey(d);
-      const code = codes[dk] || '';
-      rowsHtml += `<td class="code-cell" data-code="${code}" data-student="${s.id}" data-date="${dk}">${code}</td>`;
-    }
-    rowsHtml += `<td class="pts-cell ${ptsClass}">${pts}</td><td class="comment-cell">${escHtml(comment)}</td></tr>`;
+    const pc = pts >= settings.weeklyTotal ? 'full' : pts >= settings.weeklyTotal * 0.7 ? 'partial' : 'low';
+    rows += `<tr><td class="name-cell" title="${escHtml(s.name)}">${escHtml(s.name)}</td>`;
+    for (const d of weekDates) { const dk = dateKey(d); const code = codes[dk]||''; rows += `<td class="code-cell" data-code="${code}" data-student="${s.id}" data-date="${dk}">${code}</td>`; }
+    rows += `<td class="pts-cell ${pc}">${pts}</td><td class="comment-cell">${escHtml(calcComment(codes, weekDates))}</td></tr>`;
   }
-  tbody.innerHTML = rowsHtml;
+  tbody.innerHTML = rows;
   tbody.querySelectorAll('.code-cell').forEach(cell => {
     cell.addEventListener('click', () => {
-      const studentId = parseInt(cell.dataset.student);
-      const date = cell.dataset.date;
-      const student = students.find(s => s.id === studentId);
-      openPicker(studentId, date, student ? student.name : '', cell.dataset.code);
+      const student = students.find(s => s.id === parseInt(cell.dataset.student));
+      openPicker(parseInt(cell.dataset.student), cell.dataset.date, student ? student.name : '', cell.dataset.code);
     });
   });
 }
@@ -689,39 +635,23 @@ function openPicker(studentId, date, name, currentCode) {
   pickerInfo.textContent = `${name} — ${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
   pickerCodes.innerHTML = settings.codes.map(c => `
     <button class="code-btn ${currentCode === c.code ? 'selected' : ''}" data-code="${c.code}">
-      ${c.code}
-      <span class="code-label">${c.deduction > 0 ? '-' + c.deduction : c.meaning}</span>
-    </button>
-  `).join('');
-  pickerCodes.querySelectorAll('.code-btn').forEach(btn => {
-    btn.addEventListener('click', () => selectCode(btn.dataset.code));
-  });
+      ${c.code}<span class="code-label">${c.deduction > 0 ? '-' + c.deduction : c.meaning}</span>
+    </button>`).join('');
+  pickerCodes.querySelectorAll('.code-btn').forEach(btn => btn.addEventListener('click', () => selectCode(btn.dataset.code)));
   modal.classList.add('open');
 }
-
-function closePicker() {
-  modal.classList.remove('open');
-  pickerTarget = null;
-}
-
+function closePicker() { modal.classList.remove('open'); pickerTarget = null; }
 modal.addEventListener('click', e => { if (e.target === modal) closePicker(); });
-
 pickerClear.addEventListener('click', async () => {
   if (!pickerTarget) return;
-  const eid = entryId(pickerTarget.studentId, pickerTarget.date);
-  await dbDelete('entries', eid);
-  closePicker();
-  renderEntryGrid();
+  await dbDelete('entries', entryId(pickerTarget.studentId, pickerTarget.date));
+  closePicker(); renderEntryGrid();
 });
-
 async function selectCode(code) {
   if (!pickerTarget) return;
-  const eid = entryId(pickerTarget.studentId, pickerTarget.date);
-  await dbPut('entries', { id: eid, studentId: pickerTarget.studentId, period: currentPeriod, date: pickerTarget.date, code });
-  closePicker();
-  renderEntryGrid();
+  await dbPut('entries', { id: entryId(pickerTarget.studentId, pickerTarget.date), studentId: pickerTarget.studentId, period: currentPeriod, date: pickerTarget.date, code });
+  closePicker(); renderEntryGrid();
 }
-
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePicker(); });
 
 function renderSettings() {
@@ -732,54 +662,155 @@ function renderSettings() {
       <span class="code-tag">${c.code}</span>
       <span class="meaning">${c.meaning}</span>
       <input type="number" min="0" max="100" value="${c.deduction}" data-index="${i}" class="deduction-input" />
-    </div>
-  `).join('');
+    </div>`).join('');
   container.querySelectorAll('.deduction-input').forEach(input => {
     input.addEventListener('change', async () => {
-      const idx = parseInt(input.dataset.index);
       let val = parseInt(input.value);
       if (isNaN(val) || val < 0) val = 0;
       if (val > settings.weeklyTotal) { val = settings.weeklyTotal; input.value = val; }
-      settings.codes[idx].deduction = val;
-      await saveSettings();
-      toast('Settings saved');
+      settings.codes[parseInt(input.dataset.index)].deduction = val;
+      await saveSettings(); toast('Settings saved');
     });
   });
 }
-
 document.getElementById('weekly-pts-total').addEventListener('change', async e => {
   const val = parseInt(e.target.value);
   if (isNaN(val) || val < 1) { e.target.value = settings.weeklyTotal; toast('Must be at least 1'); return; }
-  settings.weeklyTotal = Math.min(val, 1000);
-  e.target.value = settings.weeklyTotal;
-  await saveSettings();
-  toast('Weekly total updated');
+  settings.weeklyTotal = Math.min(val, 1000); e.target.value = settings.weeklyTotal;
+  await saveSettings(); toast('Weekly total updated');
 });
 
-function escHtml(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
+// ===== CANVAS EXPORT =====
+let canvasRoster = [];
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const header = parseCSVLine(lines[0]);
+  const col = {}; header.forEach((h, i) => { col[h.trim().toLowerCase()] = i; });
+  const sc = col['student'] ?? -1, ic = col['id'] ?? -1;
+  if (sc === -1 || ic === -1) return null;
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const c = parseCSVLine(lines[i]);
+    const name = (c[sc] || '').trim();
+    if (!name || name === 'Points Possible' || name === 'Student, Test') continue;
+    rows.push({ student: name, id: (c[ic]||'').trim(), sisUserId: (c[col['sis user id']]||'').trim(), sisLoginId: (c[col['sis login id']]||'').trim(), section: (c[col['section']]||'').trim() });
+  }
+  return rows;
+}
+function parseCSVLine(line) {
+  const result = []; let current = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQ) { if (ch === '"' && line[i+1] === '"') { current += '"'; i++; } else if (ch === '"') { inQ = false; } else { current += ch; } }
+    else { if (ch === '"') { inQ = true; } else if (ch === ',') { result.push(current); current = ''; } else { current += ch; } }
+  }
+  result.push(current); return result;
+}
+function csvEscape(val) {
+  const s = String(val ?? '');
+  return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
 
+async function matchCanvasToPoints() {
+  const allStudents = await dbGetAll('students');
+  const allEntries = await dbGetAll('entries');
+  const weekDates = getWeekDates(weekStart);
+  const entryMap = {}; allEntries.forEach(e => { entryMap[e.id] = e.code; });
+  const sidToPoints = {};
+  allStudents.forEach(s => {
+    if (!s.sid) return;
+    const codes = {};
+    weekDates.forEach(d => { const eid = entryId(s.id, dateKey(d)); if (entryMap[eid]) codes[dateKey(d)] = entryMap[eid]; });
+    sidToPoints[s.sid] = calcPoints(codes, weekDates);
+  });
+  return canvasRoster.map(row => {
+    const pts = sidToPoints[row.id] ?? sidToPoints[row.sisUserId] ?? null;
+    return { ...row, points: pts, matched: pts !== null };
+  });
+}
+
+document.getElementById('canvas-file').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  importCanvasCSV(await file.text()); e.target.value = '';
+});
+document.getElementById('canvas-paste-btn').addEventListener('click', () => {
+  const ta = document.getElementById('canvas-paste'), ac = document.getElementById('canvas-paste-actions');
+  const hidden = ta.style.display === 'none';
+  ta.style.display = hidden ? 'block' : 'none'; ac.style.display = hidden ? 'block' : 'none';
+  if (hidden) ta.focus();
+});
+document.getElementById('canvas-paste-import').addEventListener('click', () => {
+  const text = document.getElementById('canvas-paste').value;
+  if (!text.trim()) { toast('Paste CSV data first'); return; }
+  importCanvasCSV(text);
+});
+
+function importCanvasCSV(text) {
+  const parsed = parseCSV(text);
+  if (parsed === null) { toast('Invalid CSV — needs "Student" and "ID" columns'); return; }
+  if (!parsed.length) { toast('No student rows found in CSV'); return; }
+  canvasRoster = parsed; _data.canvasRoster = canvasRoster; _save();
+  toast(`Imported ${canvasRoster.length} students`); renderExport();
+}
+
+document.getElementById('export-download').addEventListener('click', async () => {
+  const matched = await matchCanvasToPoints();
+  let csv = 'Student,ID,SIS User ID,SIS Login ID,Section,New Assignment\n';
+  matched.forEach(r => { csv += [csvEscape(r.student), csvEscape(r.id), csvEscape(r.sisUserId), csvEscape(r.sisLoginId), csvEscape(r.section), r.matched ? r.points : ''].join(',') + '\n'; });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  a.download = `PhysEdPro_Canvas_Export_${dateKey(new Date())}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  toast('CSV downloaded');
+});
+
+async function renderExport() {
+  const preview = document.getElementById('export-preview-section');
+  const empty = document.getElementById('export-empty');
+  if (!canvasRoster.length && _data.canvasRoster && _data.canvasRoster.length) canvasRoster = _data.canvasRoster;
+  if (!canvasRoster.length) { preview.style.display = 'none'; empty.style.display = 'block'; return; }
+  empty.style.display = 'none'; preview.style.display = 'block';
+  const matched = await matchCanvasToPoints();
+  const mc = matched.filter(r => r.matched).length, total = matched.length;
+  document.getElementById('export-match-stats').innerHTML = `<strong>${mc}</strong> of <strong>${total}</strong> matched — ` + (mc === total ? '<span class="match-yes">All matched!</span>' : `<span class="match-no">${total - mc} unmatched</span>`);
+  document.getElementById('export-thead').innerHTML = '<tr><th>Student</th><th>ID</th><th>SIS User ID</th><th>Section</th><th>Points</th><th>Status</th></tr>';
+  document.getElementById('export-tbody').innerHTML = matched.map(r => {
+    const pc = r.matched ? (r.points >= settings.weeklyTotal ? 'full' : r.points >= settings.weeklyTotal * 0.7 ? 'partial' : 'low') : '';
+    return `<tr>
+      <td>${escHtml(r.student)}</td><td>${escHtml(r.id)}</td><td>${escHtml(r.sisUserId)}</td><td>${escHtml(r.section)}</td>
+      <td>${r.matched ? `<span class="pts-cell ${pc}">${r.points}</span>` : '<span style="color:var(--text-dim)">—</span>'}</td>
+      <td>${r.matched ? '<span class="match-yes">Matched</span>' : '<span class="match-no">No match</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
 }
 
-function updateOnline() {
-  document.getElementById('offline-badge').style.display = navigator.onLine ? 'none' : 'inline';
+function applyTheme(mode) {
+  if (mode === 'light') { document.documentElement.classList.add('light'); document.getElementById('theme-icon').textContent = '☀️'; document.querySelector('meta[name="theme-color"]').content = '#d6336c'; }
+  else { document.documentElement.classList.remove('light'); document.getElementById('theme-icon').textContent = '🌙'; document.querySelector('meta[name="theme-color"]').content = '#e94560'; }
 }
+function loadTheme() { const s = localStorage.getItem('physed_pro_theme'); if (s) applyTheme(s); }
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  const isLight = document.documentElement.classList.contains('light');
+  const mode = isLight ? 'dark' : 'light'; applyTheme(mode); localStorage.setItem('physed_pro_theme', mode);
+});
+
+function updateOnline() { document.getElementById('offline-badge').style.display = navigator.onLine ? 'none' : 'inline'; }
 window.addEventListener('online', updateOnline);
 window.addEventListener('offline', updateOnline);
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
-}
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
 
 async function init() {
+  loadTheme();
   await openDB();
   await loadSettings();
   await loadWeekStart();
@@ -787,7 +818,6 @@ async function init() {
   periodTabsContainer.style.display = 'none';
   renderDashboard();
 }
-
 init();
 </script>
 </body>
