@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#e94560">
+<link rel="manifest" href="./manifest.json">
+<title>PhysEd Pro</title>
+<style>
+:root {
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --surface2: #0f3460;
+  --accent: #e94560;
+  --accent-hover: #ff6b81;
+  --text: #eee;
+  --text-dim: #999;
+  --green: #2ecc71;
+  --yellow: #f39c12;
+  --red: #e74c3c;
+  --blue: #3498db;
+  --radius: 8px;
+  --code-size: 42px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; overflow-x: hidden; }
+button { font-family: inherit; cursor: pointer; border: none; border-radius: var(--radius); }
+input, select { font-family: inherit; border-radius: var(--radius); border: 1px solid #333; background: var(--surface); color: var(--text); padding: 8px 12px; font-size: 14px; }
+input:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+/* Top Bar */
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
+.topbar h1 { font-size: 20px; font-weight: 700; color: var(--accent); }
+.topbar-right { display: flex; gap: 8px; }
+
+/* Nav */
+.nav { display: flex; gap: 0; background: var(--surface); border-bottom: 1px solid #333; overflow-x: auto; -webkit-overflow-scrolling: touch; position: sticky; top: 52px; z-index: 99; }
+.nav button { flex: 1; min-width: 80px; padding: 10px 16px; background: transparent; color: var(--text-dim); font-size: 13px; font-weight: 600; border-radius: 0; border-bottom: 3px solid transparent; white-space: nowrap; }
+.nav button.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(233,69,96,0.08); }
+
+/* Period Tabs */
+.period-tabs { display: flex; gap: 6px; padding: 10px 16px; background: var(--bg); overflow-x: auto; position: sticky; top: 95px; z-index: 98; }
+.period-tabs button { padding: 6px 16px; background: var(--surface); color: var(--text-dim); font-size: 13px; font-weight: 600; }
+.period-tabs button.active { background: var(--accent); color: #fff; }
+
+/* Page Container */
+.page { display: none; padding: 16px; max-width: 1200px; margin: 0 auto; }
+.page.active { display: block; }
+
+/* Dashboard */
+.dash-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.dash-card { background: var(--surface); padding: 16px; border-radius: var(--radius); text-align: center; }
+.dash-card .num { font-size: 32px; font-weight: 700; color: var(--accent); }
+.dash-card .label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+.dash-period { background: var(--surface); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; }
+.dash-period h3 { font-size: 14px; margin-bottom: 6px; color: var(--accent); }
+.dash-period .stat { font-size: 12px; color: var(--text-dim); }
+
+/* Roster */
+.roster-header { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.roster-header input { flex: 1; min-width: 140px; }
+.btn { padding: 8px 16px; font-size: 14px; font-weight: 600; }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: var(--accent-hover); }
+.btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+.btn-outline:hover { background: rgba(233,69,96,0.1); }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-danger { background: var(--red); color: #fff; }
+.student-list { display: flex; flex-direction: column; gap: 6px; }
+.student-row { display: flex; align-items: center; gap: 10px; background: var(--surface); padding: 10px 12px; border-radius: var(--radius); }
+.student-row .num { color: var(--text-dim); font-size: 12px; min-width: 24px; }
+.student-row .name { flex: 1; font-weight: 500; }
+.student-row .sid { color: var(--text-dim); font-size: 13px; }
+.student-row .actions { display: flex; gap: 4px; }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-dim); }
+.empty-state p { margin-top: 8px; }
+
+/* Entry Grid */
+.grid-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.grid-controls label { font-size: 13px; color: var(--text-dim); }
+.grid-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius); }
+.grid-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+.grid-table th, .grid-table td { padding: 6px 4px; text-align: center; border: 1px solid #2a2a4a; font-size: 13px; }
+.grid-table thead th { background: var(--surface2); color: var(--text-dim); font-size: 11px; font-weight: 600; position: sticky; top: 0; z-index: 2; }
+.grid-table thead th.day-header { min-width: 48px; }
+.grid-table thead th.name-header { text-align: left; min-width: 140px; position: sticky; left: 0; z-index: 3; background: var(--surface2); }
+.grid-table thead th.pts-header { min-width: 52px; }
+.grid-table tbody td.name-cell { text-align: left; font-weight: 500; position: sticky; left: 0; background: var(--surface); z-index: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+.grid-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.grid-table tbody tr:nth-child(even) td.name-cell { background: var(--surface); }
+
+/* Code Cells */
+.code-cell { cursor: pointer; min-width: 44px; height: 40px; font-weight: 700; font-size: 13px; user-select: none; -webkit-user-select: none; transition: background 0.15s; }
+.code-cell:hover { background: rgba(233,69,96,0.15) !important; }
+.code-cell:active { transform: scale(0.95); }
+.code-cell[data-code="A"] { color: var(--red); }
+.code-cell[data-code="N"], .code-cell[data-code="TN"] { color: var(--yellow); }
+.code-cell[data-code="P"], .code-cell[data-code="TP"] { color: var(--yellow); }
+.code-cell[data-code="NP"], .code-cell[data-code="TNP"] { color: var(--red); }
+.code-cell[data-code="EX"], .code-cell[data-code="MED"] { color: var(--blue); }
+.code-cell[data-code="T"] { color: var(--text-dim); }
+.pts-cell { font-weight: 700; }
+.pts-cell.full { color: var(--green); }
+.pts-cell.partial { color: var(--yellow); }
+.pts-cell.low { color: var(--red); }
+.comment-cell { font-size: 11px; text-align: left !important; min-width: 180px; color: var(--text-dim); max-width: 220px; }
+
+/* Code Picker Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: flex-end; }
+.modal-overlay.open { display: flex; }
+.code-picker { background: var(--surface); border-radius: 16px 16px 0 0; padding: 20px; width: 100%; max-width: 500px; max-height: 70vh; }
+.code-picker h3 { margin-bottom: 4px; font-size: 16px; }
+.code-picker .student-info { color: var(--text-dim); font-size: 13px; margin-bottom: 16px; }
+.code-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.code-btn { padding: 14px 8px; font-size: 15px; font-weight: 700; background: var(--surface2); color: var(--text); border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.code-btn .code-label { font-size: 10px; font-weight: 400; color: var(--text-dim); }
+.code-btn:hover { background: rgba(233,69,96,0.2); }
+.code-btn.selected { background: var(--accent); color: #fff; }
+.code-btn.selected .code-label { color: rgba(255,255,255,0.8); }
+.clear-btn { width: 100%; padding: 12px; background: var(--surface2); color: var(--text-dim); font-size: 14px; font-weight: 600; }
+.clear-btn:hover { background: rgba(255,255,255,0.1); }
+
+/* Settings */
+.settings-section { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.settings-section h3 { font-size: 15px; margin-bottom: 12px; color: var(--accent); }
+.setting-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #2a2a4a; }
+.setting-row:last-child { border-bottom: none; }
+.setting-row .code-tag { font-weight: 700; min-width: 40px; font-size: 15px; }
+.setting-row .meaning { flex: 1; font-size: 13px; color: var(--text-dim); }
+.setting-row input[type="number"] { width: 70px; text-align: center; }
+.weekly-pts-setting { display: flex; align-items: center; gap: 12px; }
+.weekly-pts-setting label { font-size: 14px; }
+.weekly-pts-setting input { width: 80px; text-align: center; font-size: 18px; font-weight: 700; }
+
+/* Toast */
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; z-index: 300; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.toast.show { opacity: 1; }
+
+/* Responsive */
+@media (min-width: 768px) {
+  .code-picker { border-radius: 16px; margin-bottom: 20vh; }
+  .modal-overlay { align-items: center; }
+  .code-grid { grid-template-columns: repeat(5, 1fr); }
+  :root { --code-size: 48px; }
+}
+@media (max-width: 400px) {
+  .grid-table th, .grid-table td { padding: 4px 2px; font-size: 12px; }
+}
+
+/* Adjustments edit input */
+.adj-input { width: 60px; text-align: center; font-size: 14px; font-weight: 700; background: transparent; border: 1px solid #444; color: var(--text); padding: 2px 4px; }
+.adj-input:focus { border-color: var(--accent); }
+
+/* Week header row */
+.week-header-cell { background: var(--accent) !important; color: #fff !important; font-weight: 700 !important; font-size: 12px !important; }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <h1>PhysEd Pro</h1>
+  <div class="topbar-right">
+    <span id="offline-badge" style="font-size:11px;color:var(--green);display:none;">OFFLINE</span>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button class="active" data-page="dashboard">Dashboard</button>
+  <button data-page="entry">Entry Grid</button>
+  <button data-page="roster">Roster</button>
+  <button data-page="settings">Settings</button>
+</div>
+
+<!-- Period Tabs (shown on entry + roster pages) -->
+<div class="period-tabs" id="period-tabs">
+  <button class="active" data-period="1">Per. 1</button>
+  <button data-period="2">Per. 2</button>
+  <button data-period="3">Per. 3</button>
+  <button data-period="4">Per. 4</button>
+  <button data-period="5">Per. 5</button>
+  <button data-period="6">Per. 6</button>
+</div>
+
+<!-- Dashboard Page -->
+<div class="page active" id="page-dashboard">
+  <div class="dash-cards" id="dash-cards"></div>
+  <div id="dash-periods"></div>
+</div>
+
+<!-- Entry Grid Page -->
+<div class="page" id="page-entry">
+  <div class="grid-controls">
+    <label>Week of:</label>
+    <input type="date" id="week-start" />
+  </div>
+  <div class="grid-wrap">
+    <table class="grid-table" id="entry-table">
+      <thead id="entry-thead"></thead>
+      <tbody id="entry-tbody"></tbody>
+    </table>
+  </div>
+  <div class="empty-state" id="entry-empty" style="display:none;">
+    <h3>No students yet</h3>
+    <p>Add students in the Roster tab first.</p>
+  </div>
+</div>
+
+<!-- Roster Page -->
+<div class="page" id="page-roster">
+  <div class="roster-header">
+    <input type="text" id="roster-name" placeholder="Student Name" />
+    <input type="text" id="roster-sid" placeholder="SSI ID" style="max-width:120px;" />
+    <button class="btn btn-accent" id="roster-add">Add</button>
+  </div>
+  <div class="student-list" id="student-list"></div>
+  <div class="empty-state" id="roster-empty" style="display:none;">
+    <h3>No students in this period</h3>
+    <p>Add students above to get started.</p>
+  </div>
+</div>
+
+<!-- Settings Page -->
+<div class="page" id="page-settings">
+  <div class="settings-section">
+    <h3>Weekly Points Total</h3>
+    <div class="weekly-pts-setting">
+      <label>Max points per week:</label>
+      <input type="number" id="weekly-pts-total" min="1" max="1000" value="100" />
+    </div>
+  </div>
+  <div class="settings-section">
+    <h3>Code Deductions</h3>
+    <div id="code-settings"></div>
+  </div>
+  <div class="settings-section">
+    <h3>About</h3>
+    <p style="font-size:13px;color:var(--text-dim);">PhysEd Pro v1.0 MVP<br>Offline PE grading &amp; participation tracker.</p>
+  </div>
+</div>
+
+<!-- Code Picker Modal -->
+<div class="modal-overlay" id="code-modal">
+  <div class="code-picker">
+    <h3>Select Code</h3>
+    <div class="student-info" id="picker-info"></div>
+    <div class="code-grid" id="picker-codes"></div>
+    <button class="clear-btn" id="picker-clear">Clear Entry</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DATABASE =====
+const DEFAULT_CODES = [
+  { code: 'A', meaning: 'Absent', deduction: 10 },
+  { code: 'N', meaning: 'Non-suit', deduction: 5 },
+  { code: 'P', meaning: 'Non-participation', deduction: 5 },
+  { code: 'NP', meaning: 'Non-suit + Non-participation', deduction: 10 },
+  { code: 'TN', meaning: 'Tardy + Non-suit', deduction: 5 },
+  { code: 'TP', meaning: 'Tardy + Non-participation', deduction: 5 },
+  { code: 'TNP', meaning: 'Tardy + Non-suit + Non-participation', deduction: 10 },
+  { code: 'EX', meaning: 'Excused', deduction: 0 },
+  { code: 'MED', meaning: 'Medically Excused', deduction: 0 },
+  { code: 'T', meaning: 'Tardy', deduction: 0 },
+];
+
+// ===== STORAGE LAYER =====
+let _data = { students: [], entries: {}, settings: {}, _nextId: 1 };
+
+function _load() {
+  try {
+    const raw = localStorage.getItem('physed_pro_data');
+    if (raw) _data = JSON.parse(raw);
+    if (!_data._nextId) _data._nextId = 1;
+    if (!_data.students) _data.students = [];
+    if (!_data.entries) _data.entries = {};
+    if (!_data.settings) _data.settings = {};
+  } catch(e) { console.error('Storage load error:', e); }
+}
+
+function _save() {
+  try {
+    localStorage.setItem('physed_pro_data', JSON.stringify(_data));
+  } catch(e) { console.error('Storage save error:', e); }
+}
+
+async function openDB() { _load(); }
+
+async function dbGet(store, key) {
+  if (store === 'settings') return _data.settings[key] || undefined;
+  if (store === 'students') return _data.students.find(s => s.id === key);
+  if (store === 'entries') return _data.entries[key] ? { id: key, ..._data.entries[key] } : undefined;
+}
+
+async function dbGetAll(store) {
+  if (store === 'students') return [..._data.students];
+  if (store === 'entries') return Object.entries(_data.entries).map(([id, e]) => ({ id, ...e }));
+  if (store === 'settings') return Object.values(_data.settings);
+  return [];
+}
+
+async function dbGetByIndex(store, index, value) {
+  if (store === 'students' && index === 'period') return _data.students.filter(s => s.period === value);
+  if (store === 'entries' && index === 'period') {
+    return Object.entries(_data.entries).filter(([, e]) => e.period === value).map(([id, e]) => ({ id, ...e }));
+  }
+  if (store === 'entries' && index === 'studentId') {
+    return Object.entries(_data.entries).filter(([, e]) => e.studentId === value).map(([id, e]) => ({ id, ...e }));
+  }
+  return [];
+}
+
+async function dbPut(store, data) {
+  if (store === 'settings') {
+    _data.settings[data.key] = data;
+  } else if (store === 'students') {
+    if (!data.id) {
+      data.id = _data._nextId++;
+      _data.students.push(data);
+    } else {
+      const idx = _data.students.findIndex(s => s.id === data.id);
+      if (idx >= 0) _data.students[idx] = data;
+      else _data.students.push(data);
+    }
+  } else if (store === 'entries') {
+    const { id, ...rest } = data;
+    _data.entries[id] = rest;
+  }
+  _save();
+  return data.id;
+}
+
+async function dbDelete(store, key) {
+  if (store === 'students') {
+    _data.students = _data.students.filter(s => s.id !== key);
+  } else if (store === 'entries') {
+    delete _data.entries[key];
+  } else if (store === 'settings') {
+    delete _data.settings[key];
+  }
+  _save();
+}
+
+// ===== STATE =====
+let currentPage = 'dashboard';
+let currentPeriod = 1;
+let settings = { weeklyTotal: 100, codes: [...DEFAULT_CODES] };
+let weekStart = getMonday(new Date());
+
+function getMonday(d) {
+  const dt = new Date(d);
+  const day = dt.getDay();
+  const diff = dt.getDate() - day + (day === 0 ? -6 : 1);
+  dt.setDate(diff);
+  dt.setHours(0,0,0,0);
+  return dt;
+}
+
+function addDays(d, n) {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
+}
+
+function getWeekDates(start) {
+  const dates = [];
+  for (let i = 0; i < 5; i++) dates.push(addDays(start, i));
+  for (let i = 7; i < 12; i++) dates.push(addDays(start, i));
+  return dates;
+}
+
+function formatDate(d) {
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function dateKey(d) {
+  return d.toISOString().split('T')[0];
+}
+
+function entryId(studentId, date) {
+  return `${studentId}_${date}`;
+}
+
+// ===== SETTINGS =====
+async function loadSettings() {
+  const s = await dbGet('settings', 'main');
+  if (s) {
+    settings = s.value;
+    if (!settings.codes) settings.codes = [...DEFAULT_CODES];
+    if (!settings.weeklyTotal) settings.weeklyTotal = 100;
+  }
+}
+
+async function saveSettings() {
+  await dbPut('settings', { key: 'main', value: settings });
+}
+
+async function loadWeekStart() {
+  const w = await dbGet('settings', 'weekStart');
+  if (w) weekStart = new Date(w.value);
+  document.getElementById('week-start').value = dateKey(weekStart);
+}
+
+async function saveWeekStart() {
+  await dbPut('settings', { key: 'weekStart', value: dateKey(weekStart) });
+}
+
+// ===== CALCULATIONS =====
+function calcPoints(codes, weekDates) {
+  let total = settings.weeklyTotal;
+  for (const date of weekDates) {
+    const dk = dateKey(date);
+    const code = codes[dk];
+    if (code) {
+      const def = settings.codes.find(c => c.code === code);
+      if (def) total -= def.deduction;
+    }
+  }
+  return Math.max(0, total);
+}
+
+function calcComment(codes, weekDates) {
+  const allCodes = weekDates.map(d => codes[dateKey(d)]).filter(Boolean);
+  if (allCodes.length === 0) return 'No entries this week.';
+  if (allCodes.includes('EX')) return 'Excused for the day.';
+  if (allCodes.includes('NP') || allCodes.includes('TNP')) return 'Non-suit and non-participation impacted points.';
+  if (allCodes.includes('P') || allCodes.includes('TP')) return 'Non-participation impacted points.';
+  if (allCodes.includes('N') || allCodes.includes('TN')) return 'Not dressed affected participation.';
+  if (allCodes.includes('A')) return 'Absence impacted points.';
+  return 'Good participation this week.';
+}
+
+// ===== NAVIGATION =====
+const navButtons = document.querySelectorAll('.nav button');
+const pages = document.querySelectorAll('.page');
+const periodTabs = document.querySelectorAll('#period-tabs button');
+const periodTabsContainer = document.getElementById('period-tabs');
+
+navButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const page = btn.dataset.page;
+    navButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    pages.forEach(p => p.classList.remove('active'));
+    document.getElementById(`page-${page}`).classList.add('active');
+    currentPage = page;
+    periodTabsContainer.style.display = (page === 'entry' || page === 'roster') ? 'flex' : 'none';
+    renderCurrentPage();
+  });
+});
+
+periodTabs.forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentPeriod = parseInt(btn.dataset.period);
+    periodTabs.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderCurrentPage();
+  });
+});
+
+function renderCurrentPage() {
+  if (currentPage === 'dashboard') renderDashboard();
+  else if (currentPage === 'entry') renderEntryGrid();
+  else if (currentPage === 'roster') renderRoster();
+  else if (currentPage === 'settings') renderSettings();
+}
+
+// ===== DASHBOARD =====
+async function renderDashboard() {
+  const allStudents = await dbGetAll('students');
+  const allEntries = await dbGetAll('entries');
+  const weekDates = getWeekDates(weekStart);
+
+  let totalStudents = allStudents.length;
+  let periodsInUse = new Set(allStudents.map(s => s.period)).size;
+
+  const today = dateKey(new Date());
+  const todayEntries = allEntries.filter(e => e.date === today).length;
+
+  document.getElementById('dash-cards').innerHTML = `
+    <div class="dash-card"><div class="num">${totalStudents}</div><div class="label">Total Students</div></div>
+    <div class="dash-card"><div class="num">${periodsInUse}</div><div class="label">Active Periods</div></div>
+    <div class="dash-card"><div class="num">${todayEntries}</div><div class="label">Today's Entries</div></div>
+    <div class="dash-card"><div class="num">${settings.weeklyTotal}</div><div class="label">Weekly Pts Max</div></div>
+  `;
+
+  let periodsHtml = '';
+  for (let p = 1; p <= 6; p++) {
+    const students = allStudents.filter(s => s.period === p);
+    if (students.length === 0) continue;
+
+    const periodEntries = allEntries.filter(e => e.period === p);
+    const entryMap = {};
+    periodEntries.forEach(e => { entryMap[e.id] = e.code; });
+
+    let totalPts = 0;
+    students.forEach(s => {
+      const codes = {};
+      weekDates.forEach(d => {
+        const eid = entryId(s.id, dateKey(d));
+        if (entryMap[eid]) codes[dateKey(d)] = entryMap[eid];
+      });
+      totalPts += calcPoints(codes, weekDates);
+    });
+
+    const avgPts = students.length > 0 ? Math.round(totalPts / students.length) : 0;
+    periodsHtml += `
+      <div class="dash-period">
+        <h3>Period ${p}</h3>
+        <span class="stat">${students.length} students &middot; Avg: ${avgPts}/${settings.weeklyTotal} pts</span>
+      </div>`;
+  }
+
+  if (!periodsHtml) {
+    periodsHtml = '<div class="empty-state"><h3>Welcome to PhysEd Pro</h3><p>Head to the Roster tab to add students.</p></div>';
+  }
+
+  document.getElementById('dash-periods').innerHTML = periodsHtml;
+}
+
+// ===== ROSTER =====
+async function renderRoster() {
+  const students = await dbGetByIndex('students', 'period', currentPeriod);
+  students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  const list = document.getElementById('student-list');
+  const empty = document.getElementById('roster-empty');
+
+  if (students.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+  list.innerHTML = students.map((s, i) => `
+    <div class="student-row">
+      <span class="num">${i + 1}</span>
+      <span class="name">${escHtml(s.name)}</span>
+      <span class="sid">${escHtml(s.sid || '')}</span>
+      <div class="actions">
+        <button class="btn btn-sm btn-outline" onclick="editStudent(${s.id})">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteStudent(${s.id})">Del</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('roster-add').addEventListener('click', addStudent);
+document.getElementById('roster-name').addEventListener('keydown', e => { if (e.key === 'Enter') addStudent(); });
+
+async function addStudent() {
+  const nameEl = document.getElementById('roster-name');
+  const sidEl = document.getElementById('roster-sid');
+  const name = nameEl.value.trim();
+  const sid = sidEl.value.trim();
+  if (!name) { toast('Enter a student name'); return; }
+
+  try {
+    await dbPut('students', { name, sid, period: currentPeriod });
+    nameEl.value = '';
+    sidEl.value = '';
+    nameEl.focus();
+    toast('Student added');
+    renderRoster();
+  } catch(e) {
+    console.error('Add student error:', e);
+    toast('Error adding student — check console');
+  }
+}
+
+window.editStudent = async function(id) {
+  const s = await dbGet('students', id);
+  if (!s) return;
+  const name = prompt('Student Name:', s.name);
+  if (name === null) return;
+  const sid = prompt('SSI ID:', s.sid || '');
+  if (sid === null) return;
+  s.name = name.trim() || s.name;
+  s.sid = sid.trim();
+  await dbPut('students', s);
+  toast('Student updated');
+  renderRoster();
+};
+
+window.deleteStudent = async function(id) {
+  if (!confirm('Remove this student? Their entries will also be deleted.')) return;
+  await dbDelete('students', id);
+  const entries = await dbGetByIndex('entries', 'studentId', id);
+  for (const e of entries) await dbDelete('entries', e.id);
+  toast('Student removed');
+  renderRoster();
+};
+
+// ===== ENTRY GRID =====
+let pickerTarget = null;
+
+document.getElementById('week-start').addEventListener('change', e => {
+  const d = new Date(e.target.value + 'T00:00:00');
+  if (!isNaN(d)) {
+    weekStart = getMonday(d);
+    e.target.value = dateKey(weekStart);
+    saveWeekStart();
+    renderEntryGrid();
+  }
+});
+
+async function renderEntryGrid() {
+  const students = await dbGetByIndex('students', 'period', currentPeriod);
+  students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  const thead = document.getElementById('entry-thead');
+  const tbody = document.getElementById('entry-tbody');
+  const empty = document.getElementById('entry-empty');
+
+  if (students.length === 0) {
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const weekDates = getWeekDates(weekStart);
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+  const periodEntries = await dbGetByIndex('entries', 'period', currentPeriod);
+  const entryMap = {};
+  periodEntries.forEach(e => { entryMap[e.id] = e.code; });
+
+  let headerHtml = '<tr><th class="name-header">Student</th>';
+  headerHtml += `<th colspan="5" class="week-header-cell">Week 1 (${formatDate(weekDates[0])})</th>`;
+  headerHtml += `<th colspan="5" class="week-header-cell">Week 2 (${formatDate(weekDates[5])})</th>`;
+  headerHtml += '<th class="pts-header">Pts</th><th>Comment</th></tr>';
+  headerHtml += '<tr><th class="name-header"></th>';
+  for (let i = 0; i < 10; i++) {
+    headerHtml += `<th class="day-header">${dayNames[i % 5]}<br><span style="font-size:10px;font-weight:400;">${formatDate(weekDates[i])}</span></th>`;
+  }
+  headerHtml += '<th class="pts-header"></th><th></th></tr>';
+  thead.innerHTML = headerHtml;
+
+  let rowsHtml = '';
+  for (const s of students) {
+    const codes = {};
+    weekDates.forEach(d => {
+      const eid = entryId(s.id, dateKey(d));
+      if (entryMap[eid]) codes[dateKey(d)] = entryMap[eid];
+    });
+
+    const pts = calcPoints(codes, weekDates);
+    const comment = calcComment(codes, weekDates);
+    const ptsClass = pts >= settings.weeklyTotal ? 'full' : pts >= settings.weeklyTotal * 0.7 ? 'partial' : 'low';
+
+    rowsHtml += `<tr><td class="name-cell" title="${escHtml(s.name)}">${escHtml(s.name)}</td>`;
+    for (const d of weekDates) {
+      const dk = dateKey(d);
+      const code = codes[dk] || '';
+      rowsHtml += `<td class="code-cell" data-code="${code}" data-student="${s.id}" data-date="${dk}">${code}</td>`;
+    }
+    rowsHtml += `<td class="pts-cell ${ptsClass}">${pts}</td>`;
+    rowsHtml += `<td class="comment-cell">${escHtml(comment)}</td></tr>`;
+  }
+  tbody.innerHTML = rowsHtml;
+
+  tbody.querySelectorAll('.code-cell').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const studentId = parseInt(cell.dataset.student);
+      const date = cell.dataset.date;
+      const student = students.find(s => s.id === studentId);
+      openPicker(studentId, date, student ? student.name : '', cell.dataset.code);
+    });
+  });
+}
+
+// ===== CODE PICKER =====
+const modal = document.getElementById('code-modal');
+const pickerInfo = document.getElementById('picker-info');
+const pickerCodes = document.getElementById('picker-codes');
+const pickerClear = document.getElementById('picker-clear');
+
+function openPicker(studentId, date, name, currentCode) {
+  pickerTarget = { studentId, date };
+  const d = new Date(date + 'T00:00:00');
+  pickerInfo.textContent = `${name} — ${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
+
+  pickerCodes.innerHTML = settings.codes.map(c => `
+    <button class="code-btn ${currentCode === c.code ? 'selected' : ''}" data-code="${c.code}">
+      ${c.code}
+      <span class="code-label">${c.deduction > 0 ? '-' + c.deduction : c.meaning}</span>
+    </button>
+  `).join('');
+
+  pickerCodes.querySelectorAll('.code-btn').forEach(btn => {
+    btn.addEventListener('click', () => selectCode(btn.dataset.code));
+  });
+
+  modal.classList.add('open');
+}
+
+function closePicker() {
+  modal.classList.remove('open');
+  pickerTarget = null;
+}
+
+modal.addEventListener('click', e => { if (e.target === modal) closePicker(); });
+
+pickerClear.addEventListener('click', async () => {
+  if (!pickerTarget) return;
+  const eid = entryId(pickerTarget.studentId, pickerTarget.date);
+  await dbDelete('entries', eid);
+  closePicker();
+  renderEntryGrid();
+});
+
+async function selectCode(code) {
+  if (!pickerTarget) return;
+  const eid = entryId(pickerTarget.studentId, pickerTarget.date);
+  await dbPut('entries', {
+    id: eid,
+    studentId: pickerTarget.studentId,
+    period: currentPeriod,
+    date: pickerTarget.date,
+    code: code
+  });
+  closePicker();
+  renderEntryGrid();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePicker();
+});
+
+// ===== SETTINGS =====
+function renderSettings() {
+  document.getElementById('weekly-pts-total').value = settings.weeklyTotal;
+
+  const container = document.getElementById('code-settings');
+  container.innerHTML = settings.codes.map((c, i) => `
+    <div class="setting-row">
+      <span class="code-tag">${c.code}</span>
+      <span class="meaning">${c.meaning}</span>
+      <input type="number" min="0" max="100" value="${c.deduction}" data-index="${i}" class="deduction-input" />
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.deduction-input').forEach(input => {
+    input.addEventListener('change', async () => {
+      const idx = parseInt(input.dataset.index);
+      settings.codes[idx].deduction = parseInt(input.value) || 0;
+      await saveSettings();
+      toast('Settings saved');
+    });
+  });
+}
+
+document.getElementById('weekly-pts-total').addEventListener('change', async e => {
+  settings.weeklyTotal = parseInt(e.target.value) || 100;
+  await saveSettings();
+  toast('Weekly total updated');
+});
+
+// ===== UTILITIES =====
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ===== OFFLINE INDICATOR =====
+function updateOnline() {
+  document.getElementById('offline-badge').style.display = navigator.onLine ? 'none' : 'inline';
+}
+window.addEventListener('online', updateOnline);
+window.addEventListener('offline', updateOnline);
+
+// ===== SERVICE WORKER =====
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// ===== INIT =====
+async function init() {
+  await openDB();
+  await loadSettings();
+  await loadWeekStart();
+  updateOnline();
+  periodTabsContainer.style.display = 'none';
+  renderDashboard();
+}
+
+init();
+</script>
+</body>
+</html>
