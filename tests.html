@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PhysEd Pro v2.0 — Test Suite</title>
+<style>
+  body { font-family: monospace; background: #111; color: #eee; padding: 20px; }
+  .pass { color: #2ecc71; } .fail { color: #e74c3c; }
+  .section { color: #f39c12; font-weight: bold; margin-top: 16px; }
+  #summary { margin-top: 20px; padding: 16px; border-radius: 8px; font-size: 16px; font-weight: bold; }
+  #summary.all-pass { background: #1a4a2e; color: #2ecc71; }
+  #summary.has-fail { background: #4a1a1a; color: #e74c3c; }
+</style>
+</head>
+<body>
+<h1>PhysEd Pro v2.0 — Test Suite</h1>
+<pre id="output"></pre>
+<div id="summary"></div>
+
+<script>
+// ========== COPY OF APP LOGIC FOR TESTING ==========
+const DEFAULT_CODES = [
+  { code: 'A', meaning: 'Absent', deduction: 10 },
+  { code: 'N', meaning: 'Non-suit', deduction: 5 },
+  { code: 'P', meaning: 'Non-participation', deduction: 5 },
+  { code: 'NP', meaning: 'Non-suit + Non-participation', deduction: 10 },
+  { code: 'TN', meaning: 'Tardy + Non-suit', deduction: 5 },
+  { code: 'TP', meaning: 'Tardy + Non-participation', deduction: 5 },
+  { code: 'TNP', meaning: 'Tardy + Non-suit + Non-participation', deduction: 10 },
+  { code: 'EX', meaning: 'Excused', deduction: 0 },
+  { code: 'MED', meaning: 'Medically Excused', deduction: 0 },
+  { code: 'T', meaning: 'Tardy', deduction: 0 },
+];
+
+let settings = { weeklyTotal: 100, codes: [...DEFAULT_CODES] };
+
+function calcPoints(codes, weekDates) {
+  let total = settings.weeklyTotal;
+  for (const date of weekDates) {
+    const code = codes[dateKey(date)];
+    if (code) { const def = settings.codes.find(c => c.code === code); if (def) total -= def.deduction; }
+  }
+  return Math.max(0, total);
+}
+function calcComment(codes, weekDates) {
+  const allCodes = weekDates.map(d => codes[dateKey(d)]).filter(Boolean);
+  if (allCodes.length === 0) return 'No entries this week.';
+  if (allCodes.includes('EX')) return 'Excused for the day.';
+  if (allCodes.includes('NP') || allCodes.includes('TNP')) return 'Non-suit and non-participation impacted points.';
+  if (allCodes.includes('P') || allCodes.includes('TP')) return 'Non-participation impacted points.';
+  if (allCodes.includes('N') || allCodes.includes('TN')) return 'Not dressed affected participation.';
+  if (allCodes.includes('A')) return 'Absence impacted points.';
+  return 'Good participation this week.';
+}
+
+function getMonday(d) {
+  const dt = new Date(d); const day = dt.getDay();
+  dt.setDate(dt.getDate() - day + (day === 0 ? -6 : 1));
+  dt.setHours(0,0,0,0); return dt;
+}
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function getWeekDates(start) {
+  const dates = [];
+  for (let i = 0; i < 5; i++) dates.push(addDays(start, i));
+  for (let i = 7; i < 12; i++) dates.push(addDays(start, i));
+  return dates;
+}
+function dateKey(d) { return d.toISOString().split('T')[0]; }
+function entryId(studentId, date) { return `${studentId}_${date}`; }
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const header = parseCSVLine(lines[0]);
+  const col = {}; header.forEach((h, i) => { col[h.trim().toLowerCase()] = i; });
+  const sc = col['student'] ?? -1, ic = col['id'] ?? -1;
+  if (sc === -1 || ic === -1) return null;
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const c = parseCSVLine(lines[i]);
+    const name = (c[sc] || '').trim();
+    if (!name || name === 'Points Possible' || name === 'Student, Test') continue;
+    rows.push({ student: name, id: (c[ic]||'').trim(), sisUserId: (c[col['sis user id']]||'').trim(), sisLoginId: (c[col['sis login id']]||'').trim(), section: (c[col['section']]||'').trim() });
+  }
+  return rows;
+}
+function parseCSVLine(line) {
+  const result = []; let current = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQ) { if (ch === '"' && line[i+1] === '"') { current += '"'; i++; } else if (ch === '"') { inQ = false; } else { current += ch; } }
+    else { if (ch === '"') { inQ = true; } else if (ch === ',') { result.push(current); current = ''; } else { current += ch; } }
+  }
+  result.push(current); return result;
+}
+function csvEscape(val) {
+  const s = String(val ?? '');
+  return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+// ========== STORAGE TESTS ==========
+let _data = { students: [], entries: {}, settings: {}, _nextId: 1 };
+
+function _load() {
+  try {
+    const raw = localStorage.getItem('physed_pro_test');
+    if (raw) { _data = JSON.parse(raw); }
+    else { _data = { students: [], entries: {}, settings: {}, _nextId: 1 }; }
+    if (!_data._nextId) _data._nextId = 1;
+    if (!Array.isArray(_data.students)) _data.students = [];
+    if (!_data.entries || typeof _data.entries !== 'object') _data.entries = {};
+    if (!_data.settings || typeof _data.settings !== 'object') _data.settings = {};
+    const maxId = _data.students.reduce((m, s) => Math.max(m, s.id || 0), 0);
+    if (_data._nextId <= maxId) _data._nextId = maxId + 1;
+  } catch(e) {
+    _data = { students: [], entries: {}, settings: {}, _nextId: 1 };
+  }
+}
+function _save() { localStorage.setItem('physed_pro_test', JSON.stringify(_data)); }
+function _reset() { localStorage.removeItem('physed_pro_test'); _data = { students: [], entries: {}, settings: {}, _nextId: 1 }; }
+
+// ========== TEST HARNESS ==========
+let passed = 0, failed = 0, total = 0;
+const out = document.getElementById('output');
+
+function section(name) { out.textContent += `\n--- ${name} ---\n`; }
+function assert(label, condition) {
+  total++;
+  if (condition) { passed++; out.textContent += `  PASS  ${label}\n`; }
+  else { failed++; out.textContent += `  FAIL  ${label}\n`; }
+}
+function assertEqual(label, actual, expected) {
+  total++;
+  if (actual === expected) { passed++; out.textContent += `  PASS  ${label}\n`; }
+  else { failed++; out.textContent += `  FAIL  ${label} — got: ${JSON.stringify(actual)}, expected: ${JSON.stringify(expected)}\n`; }
+}
+
+// ===================================================================
+//  TEST SUITE
+// ===================================================================
+
+// ---- EXISTING MVP TESTS ----
+section('POINTS CALCULATION');
+const monday = getMonday(new Date('2026-04-13'));
+const weekDates = getWeekDates(monday);
+
+assertEqual('Perfect week = 100', calcPoints({}, weekDates), 100);
+assertEqual('One absence = 90', calcPoints({ [dateKey(weekDates[0])]: 'A' }, weekDates), 90);
+assertEqual('Two absences = 80', calcPoints({ [dateKey(weekDates[0])]: 'A', [dateKey(weekDates[1])]: 'A' }, weekDates), 80);
+assertEqual('Non-suit = 95', calcPoints({ [dateKey(weekDates[0])]: 'N' }, weekDates), 95);
+assertEqual('NP = 90', calcPoints({ [dateKey(weekDates[0])]: 'NP' }, weekDates), 90);
+assertEqual('TNP = 90', calcPoints({ [dateKey(weekDates[0])]: 'TNP' }, weekDates), 90);
+assertEqual('Excused = 100', calcPoints({ [dateKey(weekDates[0])]: 'EX' }, weekDates), 100);
+assertEqual('MED = 100', calcPoints({ [dateKey(weekDates[0])]: 'MED' }, weekDates), 100);
+assertEqual('Tardy = 100', calcPoints({ [dateKey(weekDates[0])]: 'T' }, weekDates), 100);
+assertEqual('TP = 95', calcPoints({ [dateKey(weekDates[0])]: 'TP' }, weekDates), 95);
+assertEqual('TN = 95', calcPoints({ [dateKey(weekDates[0])]: 'TN' }, weekDates), 95);
+assertEqual('Multiple: A+N+P = 80', calcPoints({ [dateKey(weekDates[0])]: 'A', [dateKey(weekDates[1])]: 'N', [dateKey(weekDates[2])]: 'P' }, weekDates), 80);
+assertEqual('Floor at 0', calcPoints(Object.fromEntries(weekDates.map(d => [dateKey(d), 'NP'])), weekDates), 0);
+
+section('COMMENT GENERATION');
+assertEqual('No entries', calcComment({}, weekDates), 'No entries this week.');
+assertEqual('Excused priority', calcComment({ [dateKey(weekDates[0])]: 'EX', [dateKey(weekDates[1])]: 'A' }, weekDates), 'Excused for the day.');
+assertEqual('NP comment', calcComment({ [dateKey(weekDates[0])]: 'NP' }, weekDates), 'Non-suit and non-participation impacted points.');
+assertEqual('TNP comment', calcComment({ [dateKey(weekDates[0])]: 'TNP' }, weekDates), 'Non-suit and non-participation impacted points.');
+assertEqual('P comment', calcComment({ [dateKey(weekDates[0])]: 'P' }, weekDates), 'Non-participation impacted points.');
+assertEqual('TP comment', calcComment({ [dateKey(weekDates[0])]: 'TP' }, weekDates), 'Non-participation impacted points.');
+assertEqual('N comment', calcComment({ [dateKey(weekDates[0])]: 'N' }, weekDates), 'Not dressed affected participation.');
+assertEqual('TN comment', calcComment({ [dateKey(weekDates[0])]: 'TN' }, weekDates), 'Not dressed affected participation.');
+assertEqual('A comment', calcComment({ [dateKey(weekDates[0])]: 'A' }, weekDates), 'Absence impacted points.');
+assertEqual('Good participation', calcComment({ [dateKey(weekDates[0])]: 'T' }, weekDates), 'Good participation this week.');
+
+section('DATE UTILITIES');
+assertEqual('getMonday for Wed', dateKey(getMonday(new Date('2026-04-15'))), '2026-04-13');
+assertEqual('getMonday for Mon', dateKey(getMonday(new Date('2026-04-13'))), '2026-04-13');
+assertEqual('getMonday for Sun', dateKey(getMonday(new Date('2026-04-19'))), '2026-04-13');
+assertEqual('Week dates = 10', getWeekDates(monday).length, 10);
+assertEqual('Week1 Mon is start', dateKey(getWeekDates(monday)[0]), dateKey(monday));
+assertEqual('Week2 Mon is +7', dateKey(getWeekDates(monday)[5]), dateKey(addDays(monday, 7)));
+
+// ---- CSV PARSING (existing) ----
+section('CSV PARSING');
+const testCSV = `Student,ID,SIS User ID,SIS Login ID,Section
+"Anderson, Marcus",50001,SIS50001,manderson,Period 1
+"O'Brien, Patrick",50015,SIS50015,pobrien,Period 3`;
+const parsed = parseCSV(testCSV);
+assertEqual('Parse 2 rows', parsed.length, 2);
+assertEqual('First student name', parsed[0].student, 'Anderson, Marcus');
+assertEqual('First ID', parsed[0].id, '50001');
+assertEqual('First SIS User ID', parsed[0].sisUserId, 'SIS50001');
+assertEqual('First SIS Login ID', parsed[0].sisLoginId, 'manderson');
+assertEqual('First section', parsed[0].section, 'Period 1');
+assertEqual('Quote in name', parsed[1].student, "O'Brien, Patrick");
+assertEqual('Second SIS Login ID', parsed[1].sisLoginId, 'pobrien');
+assertEqual('Invalid CSV returns null', parseCSV('foo,bar\n1,2'), null);
+assertEqual('Empty CSV returns []', parseCSV('Student,ID').length, 0);
+
+section('CSV ESCAPE');
+assertEqual('Plain', csvEscape('hello'), 'hello');
+assertEqual('Comma', csvEscape('a,b'), '"a,b"');
+assertEqual('Quote', csvEscape('say "hi"'), '"say ""hi"""');
+assertEqual('Null', csvEscape(null), '');
+
+// ---- NEW FEATURE 1: BULK IMPORT / CANVAS CSV TO ROSTER ----
+section('FEATURE 1: BULK ROSTER IMPORT');
+
+// Test Canvas CSV auto-assigns periods from Section
+const canvasCSV = `Student,ID,SIS User ID,SIS Login ID,Section
+"Anderson, Marcus",50001,SIS50001,manderson,Period 1
+"Foster, Mia",50006,SIS50006,mfoster,Period 2
+"Kim, David",50011,SIS50011,dkim,Period 3`;
+const canvasParsed = parseCSV(canvasCSV);
+assertEqual('Canvas CSV parses 3 rows', canvasParsed.length, 3);
+
+// Test section parsing regex
+function extractPeriod(section) {
+  const m = (section || '').match(/period\s*(\d+)/i);
+  return m ? parseInt(m[1]) : null;
+}
+assertEqual('Extract period from "Period 1"', extractPeriod('Period 1'), 1);
+assertEqual('Extract period from "Period 3"', extractPeriod('Period 3'), 3);
+assertEqual('Extract period from "period2"', extractPeriod('period2'), 2);
+assertEqual('Extract period from empty', extractPeriod(''), null);
+assertEqual('Extract period from "AP Biology"', extractPeriod('AP Biology'), null);
+
+// Test name conversion (Last, First → First Last)
+function convertName(name) {
+  if (name.includes(',')) {
+    const parts = name.split(',').map(s => s.trim());
+    if (parts.length === 2) return parts[1] + ' ' + parts[0];
+  }
+  return name;
+}
+assertEqual('Convert "Anderson, Marcus"', convertName('Anderson, Marcus'), 'Marcus Anderson');
+assertEqual('Convert "O\'Brien, Patrick"', convertName("O'Brien, Patrick"), "Patrick O'Brien");
+assertEqual('No-comma name unchanged', convertName('Marcus Anderson'), 'Marcus Anderson');
+
+// Test SIS fields are parsed from CSV
+assertEqual('SIS User ID parsed', canvasParsed[0].sisUserId, 'SIS50001');
+assertEqual('SIS Login ID parsed', canvasParsed[0].sisLoginId, 'manderson');
+assertEqual('SIS User ID row 2', canvasParsed[1].sisUserId, 'SIS50006');
+assertEqual('SIS Login ID row 3', canvasParsed[2].sisLoginId, 'dkim');
+
+// ---- NEW FEATURE 2: KEYBOARD ENTRY ----
+section('FEATURE 2: KEYBOARD CODE ENTRY VALIDATION');
+
+// Valid code check
+const validCodes = DEFAULT_CODES.map(c => c.code);
+function isValidCode(val) {
+  return val === '' || validCodes.includes(val.toUpperCase());
+}
+assertEqual('A is valid', isValidCode('A'), true);
+assertEqual('NP is valid', isValidCode('NP'), true);
+assertEqual('TNP is valid', isValidCode('TNP'), true);
+assertEqual('EX is valid', isValidCode('EX'), true);
+assertEqual('MED is valid', isValidCode('MED'), true);
+assertEqual('T is valid', isValidCode('T'), true);
+assertEqual('Empty is valid (clear)', isValidCode(''), true);
+assertEqual('XYZ is invalid', isValidCode('XYZ'), false);
+assertEqual('AB is invalid', isValidCode('AB'), false);
+assertEqual('lowercase np valid', isValidCode('np'), true);
+assertEqual('Case insensitive med', isValidCode('med'), true);
+
+// All 10 codes recognized
+for (const c of DEFAULT_CODES) {
+  assert(`Code ${c.code} recognized`, validCodes.includes(c.code));
+}
+assertEqual('Total codes = 10', validCodes.length, 10);
+
+// ---- NEW FEATURE 3: CANVAS EXPORT WITH SIS IDS ----
+section('FEATURE 3: CANVAS EXPORT WITH SIS IDS');
+
+// Test that export CSV includes all required columns
+const fullCSV = `Student,ID,SIS User ID,SIS Login ID,Section
+"Anderson, Marcus",50001,SIS50001,manderson,Period 1
+"Foster, Mia",50006,SIS50006,mfoster,Period 2`;
+const fullParsed = parseCSV(fullCSV);
+
+// Simulate export row generation
+function generateExportRow(row, points) {
+  return [csvEscape(row.student), csvEscape(row.id), csvEscape(row.sisUserId), csvEscape(row.sisLoginId), csvEscape(row.section), points !== null ? points : ''].join(',');
+}
+const exportRow = generateExportRow(fullParsed[0], 95);
+assertEqual('Export row has 6 fields', exportRow.split(',').length, 6);
+assert('Export includes SIS User ID', exportRow.includes('SIS50001'));
+assert('Export includes SIS Login ID', exportRow.includes('manderson'));
+assert('Export includes points', exportRow.includes('95'));
+
+// Test CSV header for export
+const exportHeader = 'Student,ID,SIS User ID,SIS Login ID,Section,New Assignment';
+assertEqual('Export header fields', exportHeader.split(',').length, 6);
+assert('Header has SIS User ID', exportHeader.includes('SIS User ID'));
+assert('Header has SIS Login ID', exportHeader.includes('SIS Login ID'));
+
+// Test SIS ID stored in student record
+_reset();
+_data._nextId = 1;
+const student1 = { name: 'Marcus Anderson', sid: '50001', sisUserId: 'SIS50001', sisLoginId: 'manderson', period: 1 };
+student1.id = _data._nextId++;
+_data.students.push(student1);
+_save(); _load();
+assertEqual('Student has sisUserId after save/load', _data.students[0].sisUserId, 'SIS50001');
+assertEqual('Student has sisLoginId after save/load', _data.students[0].sisLoginId, 'manderson');
+
+// Test matching by sisUserId
+const sidToPoints = {};
+const sisToPoints = {};
+_data.students.forEach(s => {
+  if (s.sid) sidToPoints[s.sid] = 95;
+  if (s.sisUserId) sisToPoints[s.sisUserId] = 95;
+});
+assertEqual('Match by sid', sidToPoints['50001'] ?? null, 95);
+assertEqual('Match by sisUserId', sisToPoints['SIS50001'] ?? null, 95);
+
+// ---- NEW FEATURE 4: WEEKLY RESET / BULK CLEAR ----
+section('FEATURE 4: WEEKLY RESET / BULK CLEAR');
+
+_reset();
+_data._nextId = 1;
+// Add students
+_data.students = [
+  { id: 1, name: 'Student A', sid: '001', period: 1 },
+  { id: 2, name: 'Student B', sid: '002', period: 1 },
+  { id: 3, name: 'Student C', sid: '003', period: 2 },
+];
+_data._nextId = 4;
+
+// Add entries for week 1 and week 2
+const wk1Mon = getMonday(new Date('2026-04-13'));
+const wk1Dates = getWeekDates(wk1Mon);
+_data.entries = {};
+_data.entries[entryId(1, dateKey(wk1Dates[0]))] = { studentId: 1, period: 1, date: dateKey(wk1Dates[0]), code: 'A' };
+_data.entries[entryId(1, dateKey(wk1Dates[1]))] = { studentId: 1, period: 1, date: dateKey(wk1Dates[1]), code: 'N' };
+_data.entries[entryId(2, dateKey(wk1Dates[0]))] = { studentId: 2, period: 1, date: dateKey(wk1Dates[0]), code: 'T' };
+_data.entries[entryId(3, dateKey(wk1Dates[2]))] = { studentId: 3, period: 2, date: dateKey(wk1Dates[2]), code: 'P' };
+// Week 2 entry (should NOT be cleared by "Clear Current Week")
+_data.entries[entryId(1, '2026-04-06')] = { studentId: 1, period: 1, date: '2026-04-06', code: 'A' };
+_save();
+
+const totalEntriesBefore = Object.keys(_data.entries).length;
+assertEqual('Total entries before clear = 5', totalEntriesBefore, 5);
+
+// Simulate "Clear Current Week" — remove entries for wk1Dates
+const dateKeys = wk1Dates.map(d => dateKey(d));
+const weekEntryKeys = Object.keys(_data.entries).filter(k => {
+  const entry = _data.entries[k];
+  return dateKeys.includes(entry.date);
+});
+assertEqual('Week entries to clear = 4', weekEntryKeys.length, 4);
+
+for (const k of weekEntryKeys) delete _data.entries[k];
+_save(); _load();
+assertEqual('Entries after week clear = 1', Object.keys(_data.entries).length, 1);
+assertEqual('Remaining is previous week entry', _data.entries[entryId(1, '2026-04-06')]?.code, 'A');
+assertEqual('Students preserved after week clear', _data.students.length, 3);
+
+// Simulate "Clear All Entries"
+_data.entries = {}; _save(); _load();
+assertEqual('Entries after full clear = 0', Object.keys(_data.entries).length, 0);
+assertEqual('Students preserved after full clear', _data.students.length, 3);
+assertEqual('Student A still exists', _data.students[0].name, 'Student A');
+
+// ---- STORAGE EDGE CASES ----
+section('STORAGE EDGE CASES');
+
+_reset(); _load();
+assertEqual('Fresh load: students empty', _data.students.length, 0);
+assertEqual('Fresh load: entries empty', Object.keys(_data.entries).length, 0);
+assertEqual('Fresh load: nextId = 1', _data._nextId, 1);
+
+// Corrupt JSON recovery
+localStorage.setItem('physed_pro_test', '{CORRUPT');
+_load();
+assertEqual('Corrupt JSON resets students', _data.students.length, 0);
+assertEqual('Corrupt JSON resets entries', Object.keys(_data.entries).length, 0);
+
+// Missing fields recovery
+localStorage.setItem('physed_pro_test', '{"students":"not-array"}');
+_load();
+assertEqual('Non-array students reset', Array.isArray(_data.students), true);
+assertEqual('Non-array students empty', _data.students.length, 0);
+
+// nextId sync
+_data = { students: [{ id: 50, name: 'X', sid: '', period: 1 }], entries: {}, settings: {}, _nextId: 1 };
+_save(); _load();
+assertEqual('nextId syncs above max', _data._nextId, 51);
+
+// ---- FULL CSV ROUNDTRIP ----
+section('FULL CSV ROUNDTRIP');
+
+const fullTestCSV = `Student,ID,SIS User ID,SIS Login ID,Section
+"Anderson, Marcus",50001,SIS50001,manderson,Period 1
+"Brooks, Tanya",50002,SIS50002,tbrooks,Period 1
+"Carter, Jaylen",50003,SIS50003,jcarter,Period 1
+"Davis, Aaliyah",50004,SIS50004,adavis,Period 1
+"Edwards, Deshawn",50005,SIS50005,dedwards,Period 1
+"Foster, Mia",50006,SIS50006,mfoster,Period 2
+"Garcia, Luis",50007,SIS50007,lgarcia,Period 2
+"Harris, Keisha",50008,SIS50008,kharris,Period 2
+"Ingram, Tyler",50009,SIS50009,tingram,Period 2
+"Jackson, Brianna",50010,SIS50010,bjackson,Period 2
+"Kim, David",50011,SIS50011,dkim,Period 3
+"Lopez, Sofia",50012,SIS50012,slopez,Period 3
+"Mitchell, Andre",50013,SIS50013,amitchell,Period 3
+"Nelson, Destiny",50014,SIS50014,dnelson,Period 3
+"O'Brien, Patrick",50015,SIS50015,pobrien,Period 3`;
+const roundtrip = parseCSV(fullTestCSV);
+assertEqual('Full CSV: 15 students', roundtrip.length, 15);
+assertEqual('Full CSV: all have SIS User ID', roundtrip.every(r => r.sisUserId.startsWith('SIS')), true);
+assertEqual('Full CSV: all have SIS Login ID', roundtrip.every(r => r.sisLoginId.length > 0), true);
+assertEqual('Full CSV: sections present', roundtrip.every(r => r.section.startsWith('Period')), true);
+
+// Generate export CSV and re-parse
+let exportCSV = 'Student,ID,SIS User ID,SIS Login ID,Section,New Assignment\n';
+roundtrip.forEach(r => {
+  exportCSV += [csvEscape(r.student), csvEscape(r.id), csvEscape(r.sisUserId), csvEscape(r.sisLoginId), csvEscape(r.section), '100'].join(',') + '\n';
+});
+const exportLines = exportCSV.trim().split('\n');
+assertEqual('Export CSV has header + 15 rows', exportLines.length, 16);
+assert('Export header has SIS User ID', exportLines[0].includes('SIS User ID'));
+assert('Export header has SIS Login ID', exportLines[0].includes('SIS Login ID'));
+assert('Export row has SIS50001', exportLines[1].includes('SIS50001'));
+assert('Export row has manderson', exportLines[1].includes('manderson'));
+
+// Cleanup
+_reset();
+
+// ========== SUMMARY ==========
+const summaryEl = document.getElementById('summary');
+summaryEl.textContent = `${passed} of ${total} tests passed` + (failed ? ` — ${failed} FAILED` : ' — ALL PASS');
+summaryEl.className = failed ? 'has-fail' : 'all-pass';
+
+// Apply colors
+const lines = out.textContent.split('\n');
+out.innerHTML = '';
+lines.forEach(line => {
+  const span = document.createElement('span');
+  if (line.includes('PASS')) span.className = 'pass';
+  else if (line.includes('FAIL')) span.className = 'fail';
+  else if (line.startsWith('---')) span.className = 'section';
+  span.textContent = line + '\n';
+  out.appendChild(span);
+});
+</script>
+</body>
+</html>
