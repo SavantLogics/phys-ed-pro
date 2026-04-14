@@ -185,6 +185,25 @@ html.light .toggle-thumb { transform: translateX(18px); }
 .match-yes { color: var(--green); }
 .match-no { color: var(--red); font-style: italic; }
 .export-pts { font-weight: 700; }
+
+/* Inline Code Input */
+.inline-code-input {
+  width: 100%; max-width: 44px; padding: 2px; text-align: center;
+  font-weight: 700; font-size: 13px; text-transform: uppercase;
+  background: var(--bg); color: var(--text);
+  border: 2px solid var(--accent); border-radius: 4px; outline: none;
+}
+.code-hint { font-size: 11px; color: var(--text-dim); margin-bottom: 8px; padding: 0 4px; }
+
+/* Bulk Import */
+.bulk-import-section { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.bulk-import-section h3 { font-size: 15px; margin-bottom: 8px; color: var(--accent); }
+
+/* Data Management */
+.data-mgmt-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* SIS ID display */
+.student-row .sis-extra { color: var(--text-dim); font-size: 11px; font-style: italic; }
 </style>
 </head>
 <body>
@@ -229,6 +248,7 @@ html.light .toggle-thumb { transform: translateX(18px); }
     <label>Week of:</label>
     <input type="date" id="week-start" />
   </div>
+  <div class="code-hint" id="code-hint">Click a cell and type a code: <strong>A</strong>, <strong>N</strong>, <strong>P</strong>, <strong>NP</strong>, <strong>TN</strong>, <strong>TP</strong>, <strong>TNP</strong>, <strong>EX</strong>, <strong>MED</strong>, <strong>T</strong> — then press Enter to advance.</div>
   <div class="grid-wrap">
     <table class="grid-table" id="entry-table">
       <thead id="entry-thead"></thead>
@@ -247,6 +267,21 @@ html.light .toggle-thumb { transform: translateX(18px); }
     <input type="text" id="roster-name" placeholder="Student Name" />
     <input type="text" id="roster-sid" placeholder="SSI ID" style="max-width:120px;" />
     <button class="btn btn-accent" id="roster-add">Add</button>
+  </div>
+  <div class="bulk-import-section">
+    <h3>Bulk Import</h3>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">Paste student names (one per line) to add to the current period, or upload a Canvas CSV to auto-assign students to periods.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+      <label class="btn btn-accent" style="cursor:pointer;">
+        Upload Canvas CSV
+        <input type="file" id="roster-csv-file" accept=".csv" style="display:none;" />
+      </label>
+      <button class="btn btn-outline" id="roster-paste-toggle">Paste Names</button>
+    </div>
+    <textarea id="roster-paste-area" placeholder="One student name per line...&#10;OR paste Canvas CSV data" style="display:none;width:100%;height:120px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:10px;font-size:13px;font-family:monospace;resize:vertical;"></textarea>
+    <div id="roster-paste-actions" style="display:none;margin-top:8px;">
+      <button class="btn btn-accent btn-sm" id="roster-paste-import">Import Names to Period</button>
+    </div>
   </div>
   <div class="student-list" id="student-list"></div>
   <div class="empty-state" id="roster-empty" style="display:none;">
@@ -313,8 +348,16 @@ html.light .toggle-thumb { transform: translateX(18px); }
     <div id="code-settings"></div>
   </div>
   <div class="settings-section">
+    <h3>Data Management</h3>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Clear entry data while keeping your roster intact, or reset everything.</p>
+    <div class="data-mgmt-btns">
+      <button class="btn btn-outline" id="clear-week-data">Clear Current Week Entries</button>
+      <button class="btn btn-danger" id="clear-all-entries">Clear All Entry Data</button>
+    </div>
+  </div>
+  <div class="settings-section">
     <h3>About</h3>
-    <p style="font-size:13px;color:var(--text-dim);">PhysEd Pro v1.0 MVP<br>Offline PE grading &amp; participation tracker.</p>
+    <p style="font-size:13px;color:var(--text-dim);">PhysEd Pro v2.0<br>Offline PE grading &amp; participation tracker.<br>Bulk import, keyboard entry, SIS ID support.</p>
   </div>
 </div>
 
@@ -534,7 +577,7 @@ async function renderRoster() {
     <div class="student-row">
       <span class="num">${i + 1}</span>
       <span class="name">${escHtml(s.name)}</span>
-      <span class="sid">${escHtml(s.sid || '')}</span>
+      <span class="sid">${escHtml(s.sid || '')}${s.sisUserId ? ' <span class="sis-extra">SIS: ' + escHtml(s.sisUserId) + '</span>' : ''}${s.sisLoginId ? ' <span class="sis-extra">Login: ' + escHtml(s.sisLoginId) + '</span>' : ''}</span>
       <div class="actions">
         <button class="btn btn-sm btn-outline" onclick="editStudent(${s.id})">Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deleteStudent(${s.id})">Del</button>
@@ -555,6 +598,89 @@ async function clearAllStudents() {
     await dbDelete('students', s.id);
   }
   toast(`Period ${currentPeriod} cleared`); renderRoster();
+}
+
+// ===== BULK IMPORT =====
+document.getElementById('roster-csv-file').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  await importRosterFromCSV(await file.text()); e.target.value = '';
+});
+document.getElementById('roster-paste-toggle').addEventListener('click', () => {
+  const ta = document.getElementById('roster-paste-area'), ac = document.getElementById('roster-paste-actions');
+  const hidden = ta.style.display === 'none';
+  ta.style.display = hidden ? 'block' : 'none';
+  ac.style.display = hidden ? 'block' : 'none';
+  if (hidden) ta.focus();
+});
+document.getElementById('roster-paste-import').addEventListener('click', async () => {
+  const text = document.getElementById('roster-paste-area').value.trim();
+  if (!text) { toast('Paste data first'); return; }
+  // Detect if it's CSV (has commas and a "Student" header) or plain names
+  if (text.includes(',') && /student/i.test(text.split('\n')[0])) {
+    await importRosterFromCSV(text);
+  } else {
+    await bulkImportNames(text);
+  }
+});
+
+async function bulkImportNames(text) {
+  const names = text.split(/\r?\n/).map(n => n.trim()).filter(Boolean);
+  if (!names.length) { toast('No names found'); return; }
+  let added = 0;
+  for (const name of names) {
+    const existing = _data.students.find(s => s.name === name && s.period === currentPeriod);
+    if (!existing) {
+      await dbPut('students', { name, sid: '', period: currentPeriod });
+      added++;
+    }
+  }
+  document.getElementById('roster-paste-area').value = '';
+  document.getElementById('roster-paste-area').style.display = 'none';
+  document.getElementById('roster-paste-actions').style.display = 'none';
+  toast(`Added ${added} students to Period ${currentPeriod}`);
+  renderRoster();
+}
+
+async function importRosterFromCSV(text) {
+  const parsed = parseCSV(text);
+  if (parsed === null) { toast('Invalid CSV — needs "Student" and "ID" columns'); return; }
+  if (!parsed.length) { toast('No student rows found in CSV'); return; }
+  let added = 0, updated = 0;
+  for (const row of parsed) {
+    // Extract period from Section column (e.g., "Period 1" → 1)
+    let period = currentPeriod;
+    const secMatch = (row.section || '').match(/period\s*(\d+)/i);
+    if (secMatch) period = parseInt(secMatch[1]);
+    // Convert "Last, First" to "First Last"
+    let name = row.student;
+    if (name.includes(',')) {
+      const parts = name.split(',').map(s => s.trim());
+      if (parts.length === 2) name = parts[1] + ' ' + parts[0];
+    }
+    const sid = row.id;
+    const sisUserId = row.sisUserId || '';
+    const sisLoginId = row.sisLoginId || '';
+    // Check if student already exists (by sid match)
+    const existing = _data.students.find(s => s.sid === sid && sid);
+    if (existing) {
+      existing.sisUserId = sisUserId;
+      existing.sisLoginId = sisLoginId;
+      if (!existing.name || existing.name === name) existing.name = name;
+      existing.period = period;
+      await dbPut('students', existing);
+      updated++;
+    } else {
+      await dbPut('students', { name, sid, sisUserId, sisLoginId, period });
+      added++;
+    }
+  }
+  // Also store as canvasRoster for export page
+  canvasRoster = parsed; _data.canvasRoster = canvasRoster; _save();
+  document.getElementById('roster-paste-area').value = '';
+  document.getElementById('roster-paste-area').style.display = 'none';
+  document.getElementById('roster-paste-actions').style.display = 'none';
+  toast(`Imported: ${added} added, ${updated} updated across ${new Set(parsed.map(r => r.section)).size} sections`);
+  renderRoster();
 }
 
 async function addStudent() {
@@ -617,11 +743,18 @@ async function renderEntryGrid() {
   }
   tbody.innerHTML = rows;
   tbody.querySelectorAll('.code-cell').forEach(cell => {
-    cell.addEventListener('click', () => {
-      const student = students.find(s => s.id === parseInt(cell.dataset.student));
-      openPicker(parseInt(cell.dataset.student), cell.dataset.date, student ? student.name : '', cell.dataset.code);
-    });
+    cell.addEventListener('click', () => startInlineEdit(cell));
   });
+
+  // Handle pending edit (auto-advance after Enter)
+  if (pendingEditCell) {
+    const { date, studentIndex } = pendingEditCell;
+    pendingEditCell = null;
+    const cells = [...tbody.querySelectorAll(`.code-cell[data-date="${date}"]`)];
+    if (cells[studentIndex]) {
+      setTimeout(() => startInlineEdit(cells[studentIndex]), 50);
+    }
+  }
 }
 
 const modal = document.getElementById('code-modal');
@@ -653,6 +786,75 @@ async function selectCode(code) {
   closePicker(); renderEntryGrid();
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePicker(); });
+
+// ===== INLINE CODE ENTRY =====
+let pendingEditCell = null;
+
+function startInlineEdit(cell) {
+  if (cell.querySelector('input')) return;
+  const studentId = parseInt(cell.dataset.student);
+  const date = cell.dataset.date;
+  const currentCode = cell.dataset.code || '';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = currentCode;
+  input.className = 'inline-code-input';
+  input.setAttribute('autocapitalize', 'characters');
+  input.setAttribute('autocorrect', 'off');
+  input.setAttribute('autocomplete', 'off');
+  input.setAttribute('spellcheck', 'false');
+  input.maxLength = 3;
+
+  cell.textContent = '';
+  cell.appendChild(input);
+  input.focus();
+  input.select();
+
+  let saved = false;
+  const save = async (advance) => {
+    if (saved) return;
+    saved = true;
+    const val = input.value.trim().toUpperCase();
+    const validCode = val === '' || settings.codes.some(c => c.code === val);
+
+    if (!validCode) {
+      toast('Invalid code: ' + val + '. Use: A, N, P, NP, TN, TP, TNP, EX, MED, T');
+      saved = false;
+      input.value = currentCode;
+      input.select();
+      return;
+    }
+
+    if (val === '') {
+      await dbDelete('entries', entryId(studentId, date));
+    } else {
+      await dbPut('entries', { id: entryId(studentId, date), studentId, period: currentPeriod, date, code: val });
+    }
+
+    if (advance) {
+      const allCells = [...document.querySelectorAll(`.code-cell[data-date="${date}"]`)];
+      const currentIdx = allCells.indexOf(cell);
+      if (currentIdx < allCells.length - 1) {
+        pendingEditCell = { date, studentIndex: currentIdx + 1 };
+      }
+    }
+    renderEntryGrid();
+  };
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); save(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); renderEntryGrid(); }
+    else if (e.key === 'Tab') { e.preventDefault(); save(false); }
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (saved || !cell.querySelector('input')) return;
+      save(false);
+    }, 150);
+  });
+}
 
 function renderSettings() {
   document.getElementById('weekly-pts-total').value = settings.weeklyTotal;
@@ -720,14 +922,16 @@ async function matchCanvasToPoints() {
   const weekDates = getWeekDates(weekStart);
   const entryMap = {}; allEntries.forEach(e => { entryMap[e.id] = e.code; });
   const sidToPoints = {};
+  const sisToPoints = {};
   allStudents.forEach(s => {
-    if (!s.sid) return;
     const codes = {};
     weekDates.forEach(d => { const eid = entryId(s.id, dateKey(d)); if (entryMap[eid]) codes[dateKey(d)] = entryMap[eid]; });
-    sidToPoints[s.sid] = calcPoints(codes, weekDates);
+    const pts = calcPoints(codes, weekDates);
+    if (s.sid) sidToPoints[s.sid] = pts;
+    if (s.sisUserId) sisToPoints[s.sisUserId] = pts;
   });
   return canvasRoster.map(row => {
-    const pts = sidToPoints[row.id] ?? sidToPoints[row.sisUserId] ?? null;
+    const pts = sidToPoints[row.id] ?? sisToPoints[row.sisUserId] ?? sidToPoints[row.sisUserId] ?? null;
     return { ...row, points: pts, matched: pts !== null };
   });
 }
@@ -752,8 +956,19 @@ function importCanvasCSV(text) {
   const parsed = parseCSV(text);
   if (parsed === null) { toast('Invalid CSV — needs "Student" and "ID" columns'); return; }
   if (!parsed.length) { toast('No student rows found in CSV'); return; }
-  canvasRoster = parsed; _data.canvasRoster = canvasRoster; _save();
-  toast(`Imported ${canvasRoster.length} students`); renderExport();
+  canvasRoster = parsed; _data.canvasRoster = canvasRoster;
+  // Also update matching student records with SIS IDs
+  let updatedCount = 0;
+  for (const row of parsed) {
+    const match = _data.students.find(s => s.sid === row.id || (row.sisUserId && s.sid === row.sisUserId));
+    if (match) {
+      match.sisUserId = row.sisUserId || '';
+      match.sisLoginId = row.sisLoginId || '';
+      updatedCount++;
+    }
+  }
+  _save();
+  toast(`Imported ${canvasRoster.length} students` + (updatedCount ? `, updated ${updatedCount} SIS IDs` : '')); renderExport();
 }
 
 document.getElementById('export-download').addEventListener('click', async () => {
@@ -776,11 +991,11 @@ async function renderExport() {
   const matched = await matchCanvasToPoints();
   const mc = matched.filter(r => r.matched).length, total = matched.length;
   document.getElementById('export-match-stats').innerHTML = `<strong>${mc}</strong> of <strong>${total}</strong> matched — ` + (mc === total ? '<span class="match-yes">All matched!</span>' : `<span class="match-no">${total - mc} unmatched</span>`);
-  document.getElementById('export-thead').innerHTML = '<tr><th>Student</th><th>ID</th><th>SIS User ID</th><th>Section</th><th>Points</th><th>Status</th></tr>';
+  document.getElementById('export-thead').innerHTML = '<tr><th>Student</th><th>ID</th><th>SIS User ID</th><th>SIS Login ID</th><th>Section</th><th>Points</th><th>Status</th></tr>';
   document.getElementById('export-tbody').innerHTML = matched.map(r => {
     const pc = r.matched ? (r.points >= settings.weeklyTotal ? 'full' : r.points >= settings.weeklyTotal * 0.7 ? 'partial' : 'low') : '';
     return `<tr>
-      <td>${escHtml(r.student)}</td><td>${escHtml(r.id)}</td><td>${escHtml(r.sisUserId)}</td><td>${escHtml(r.section)}</td>
+      <td>${escHtml(r.student)}</td><td>${escHtml(r.id)}</td><td>${escHtml(r.sisUserId)}</td><td>${escHtml(r.sisLoginId)}</td><td>${escHtml(r.section)}</td>
       <td>${r.matched ? `<span class="pts-cell ${pc}">${r.points}</span>` : '<span style="color:var(--text-dim)">—</span>'}</td>
       <td>${r.matched ? '<span class="match-yes">Matched</span>' : '<span class="match-no">No match</span>'}</td>
     </tr>`;
@@ -808,6 +1023,28 @@ window.addEventListener('online', updateOnline);
 window.addEventListener('offline', updateOnline);
 
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
+
+// ===== DATA MANAGEMENT =====
+document.getElementById('clear-week-data').addEventListener('click', async () => {
+  const weekDates = getWeekDates(weekStart);
+  const dateKeys = weekDates.map(d => dateKey(d));
+  const allEntries = await dbGetAll('entries');
+  const weekEntries = allEntries.filter(e => dateKeys.includes(e.date));
+  if (!weekEntries.length) { toast('No entries for this week to clear'); return; }
+  if (!confirm(`Clear ${weekEntries.length} entries for the week of ${formatDate(weekStart)}? Roster will be kept.`)) return;
+  for (const e of weekEntries) await dbDelete('entries', e.id);
+  toast(`Cleared ${weekEntries.length} entries for the week`);
+  renderCurrentPage();
+});
+
+document.getElementById('clear-all-entries').addEventListener('click', async () => {
+  const allEntries = await dbGetAll('entries');
+  if (!allEntries.length) { toast('No entry data to clear'); return; }
+  if (!confirm(`Clear ALL ${allEntries.length} entries across all periods and weeks? Roster will be kept.`)) return;
+  _data.entries = {}; _save();
+  toast(`Cleared all ${allEntries.length} entries`);
+  renderCurrentPage();
+});
 
 async function init() {
   loadTheme();

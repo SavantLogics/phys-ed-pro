@@ -142,7 +142,7 @@ function assertEqual(label, actual, expected) {
 
 // ---- EXISTING MVP TESTS ----
 section('POINTS CALCULATION');
-const monday = getMonday(new Date('2026-04-13'));
+const monday = getMonday(new Date('2026-04-13T12:00:00'));
 const weekDates = getWeekDates(monday);
 
 assertEqual('Perfect week = 100', calcPoints({}, weekDates), 100);
@@ -172,9 +172,9 @@ assertEqual('A comment', calcComment({ [dateKey(weekDates[0])]: 'A' }, weekDates
 assertEqual('Good participation', calcComment({ [dateKey(weekDates[0])]: 'T' }, weekDates), 'Good participation this week.');
 
 section('DATE UTILITIES');
-assertEqual('getMonday for Wed', dateKey(getMonday(new Date('2026-04-15'))), '2026-04-13');
-assertEqual('getMonday for Mon', dateKey(getMonday(new Date('2026-04-13'))), '2026-04-13');
-assertEqual('getMonday for Sun', dateKey(getMonday(new Date('2026-04-19'))), '2026-04-13');
+assertEqual('getMonday for Wed', dateKey(getMonday(new Date('2026-04-15T12:00:00'))), '2026-04-13');
+assertEqual('getMonday for Mon', dateKey(getMonday(new Date('2026-04-13T12:00:00'))), '2026-04-13');
+assertEqual('getMonday for Sun', dateKey(getMonday(new Date('2026-04-19T12:00:00'))), '2026-04-13');
 assertEqual('Week dates = 10', getWeekDates(monday).length, 10);
 assertEqual('Week1 Mon is start', dateKey(getWeekDates(monday)[0]), dateKey(monday));
 assertEqual('Week2 Mon is +7', dateKey(getWeekDates(monday)[5]), dateKey(addDays(monday, 7)));
@@ -282,7 +282,8 @@ function generateExportRow(row, points) {
   return [csvEscape(row.student), csvEscape(row.id), csvEscape(row.sisUserId), csvEscape(row.sisLoginId), csvEscape(row.section), points !== null ? points : ''].join(',');
 }
 const exportRow = generateExportRow(fullParsed[0], 95);
-assertEqual('Export row has 6 fields', exportRow.split(',').length, 6);
+const exportRowFields = parseCSVLine(exportRow);
+assertEqual('Export row has 6 fields', exportRowFields.length, 6);
 assert('Export includes SIS User ID', exportRow.includes('SIS50001'));
 assert('Export includes SIS Login ID', exportRow.includes('manderson'));
 assert('Export includes points', exportRow.includes('95'));
@@ -327,7 +328,7 @@ _data.students = [
 _data._nextId = 4;
 
 // Add entries for week 1 and week 2
-const wk1Mon = getMonday(new Date('2026-04-13'));
+const wk1Mon = getMonday(new Date('2026-04-13T12:00:00'));
 const wk1Dates = getWeekDates(wk1Mon);
 _data.entries = {};
 _data.entries[entryId(1, dateKey(wk1Dates[0]))] = { studentId: 1, period: 1, date: dateKey(wk1Dates[0]), code: 'A' };
@@ -422,6 +423,10 @@ assert('Export header has SIS User ID', exportLines[0].includes('SIS User ID'));
 assert('Export header has SIS Login ID', exportLines[0].includes('SIS Login ID'));
 assert('Export row has SIS50001', exportLines[1].includes('SIS50001'));
 assert('Export row has manderson', exportLines[1].includes('manderson'));
+
+// Parse the export row properly (CSV-aware) and verify field count
+const exportRowParsed = parseCSVLine(exportLines[1]);
+assertEqual('Export row parsed = 6 fields', exportRowParsed.length, 6);
 
 // Cleanup
 _reset();
