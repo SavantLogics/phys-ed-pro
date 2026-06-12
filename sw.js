@@ -1,5 +1,10 @@
-const CACHE_NAME = 'physed-pro-v2';
-const ASSETS = ['./index.html', './manifest.json'];
+/* PhysEd Pro v3.0 service worker.
+   Strategy: stale-while-revalidate — serve from cache instantly
+   (works offline, fast on slow school wifi), refresh the cache in
+   the background so the next load picks up updates.
+   https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API */
+const CACHE_NAME = 'physed-pro-v3-1';
+const ASSETS = ['./', './index.html', './logic.js', './storage.js', './manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
@@ -15,13 +20,18 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Network-first: try fresh copy, fall back to cache when offline
 self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request).then(resp => {
-      const clone = resp.clone();
-      caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-      return resp;
-    }).catch(() => caches.match(e.request))
+    caches.match(e.request).then(cached => {
+      const fetched = fetch(e.request).then(resp => {
+        if (resp && resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        }
+        return resp;
+      }).catch(() => cached);
+      return cached || fetched;
+    })
   );
 });

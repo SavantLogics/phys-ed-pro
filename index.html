@@ -25,7 +25,7 @@
   --code-size: 42px;
   --border: #2a2a4a;
   --input-border: #333;
-  --row-alt: var(--row-alt);
+  --row-alt: rgba(255,255,255,0.03);
   --name-cell-bg: var(--surface);
 }
 html.light {
@@ -48,13 +48,13 @@ html.light {
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; overflow-x: hidden; }
 button { font-family: inherit; cursor: pointer; border: none; border-radius: var(--radius); }
-input, select { font-family: inherit; border-radius: var(--radius); border: 1px solid var(--input-border); background: var(--surface); color: var(--text); padding: 8px 12px; font-size: 14px; }
-input:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+input, select, textarea { font-family: inherit; border-radius: var(--radius); border: 1px solid var(--input-border); background: var(--surface); color: var(--text); padding: 8px 12px; font-size: 14px; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
 
 /* Top Bar */
 .topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
 .topbar h1 { font-size: 20px; font-weight: 700; color: var(--accent); }
-.topbar-right { display: flex; gap: 8px; }
+.topbar-right { display: flex; gap: 8px; align-items: center; }
 
 /* Nav */
 .nav { display: flex; gap: 0; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch; position: sticky; top: 52px; z-index: 99; }
@@ -102,15 +102,15 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 .grid-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
 .grid-controls label { font-size: 13px; color: var(--text-dim); }
 .grid-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius); }
-.grid-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+.grid-table { width: 100%; border-collapse: collapse; min-width: 760px; }
 .grid-table th, .grid-table td { padding: 6px 4px; text-align: center; border: 1px solid var(--border); font-size: 13px; }
 .grid-table thead th { background: var(--surface2); color: var(--text-dim); font-size: 11px; font-weight: 600; position: sticky; top: 0; z-index: 2; }
 .grid-table thead th.day-header { min-width: 48px; }
 .grid-table thead th.name-header { text-align: left; min-width: 140px; position: sticky; left: 0; z-index: 3; background: var(--surface2); }
 .grid-table thead th.pts-header { min-width: 52px; }
-.grid-table tbody td.name-cell { text-align: left; font-weight: 500; position: sticky; left: 0; background: var(--surface); z-index: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+.grid-table tbody td.name-cell { text-align: left; font-weight: 500; position: sticky; left: 0; background: var(--name-cell-bg); z-index: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
 .grid-table tbody tr:nth-child(even) td { background: var(--row-alt); }
-.grid-table tbody tr:nth-child(even) td.name-cell { background: var(--surface); }
+.grid-table tbody tr:nth-child(even) td.name-cell { background: var(--name-cell-bg); }
 
 /* Code Cells */
 .code-cell { cursor: pointer; min-width: 44px; height: 40px; font-weight: 700; font-size: 13px; user-select: none; -webkit-user-select: none; transition: background 0.15s; }
@@ -126,7 +126,11 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 .pts-cell.full { color: var(--green); }
 .pts-cell.partial { color: var(--yellow); }
 .pts-cell.low { color: var(--red); }
-.comment-cell { font-size: 11px; text-align: left !important; min-width: 180px; color: var(--text-dim); max-width: 220px; }
+.pts-cell .auto-note { font-size: 9px; color: var(--text-dim); display: block; font-weight: 400; }
+.comment-cell { font-size: 11px; text-align: left !important; min-width: 180px; color: var(--text-dim); max-width: 220px; cursor: pointer; }
+.comment-cell.custom { color: var(--blue); font-style: italic; }
+.comment-cell:hover { background: rgba(52,152,219,0.1) !important; }
+.comment-edit { width: 100%; min-height: 50px; font-size: 11px; resize: vertical; }
 
 /* Code Picker Modal */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: flex-end; }
@@ -146,14 +150,24 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 /* Settings */
 .settings-section { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
 .settings-section h3 { font-size: 15px; margin-bottom: 12px; color: var(--accent); }
-.setting-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.setting-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .setting-row:last-child { border-bottom: none; }
 .setting-row .code-tag { font-weight: 700; min-width: 40px; font-size: 15px; }
 .setting-row .meaning { flex: 1; font-size: 13px; color: var(--text-dim); }
 .setting-row input[type="number"] { width: 70px; text-align: center; }
+.setting-row .custom-badge { font-size: 10px; background: var(--blue); color: #fff; padding: 2px 6px; border-radius: 8px; }
 .weekly-pts-setting { display: flex; align-items: center; gap: 12px; }
 .weekly-pts-setting label { font-size: 14px; }
 .weekly-pts-setting input { width: 80px; text-align: center; font-size: 18px; font-weight: 700; }
+.threshold-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.threshold-row label { flex: 1; font-size: 13px; color: var(--text-dim); }
+.threshold-row input { width: 70px; text-align: center; }
+.add-code-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.add-code-form input[type="text"] { max-width: 150px; }
+.add-code-form input[type="number"] { width: 70px; text-align: center; }
+.flag-checks { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--text-dim); width: 100%; }
+.flag-checks label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.feature-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 14px; }
 
 /* Toast */
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; z-index: 300; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
@@ -170,8 +184,9 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
   .grid-table th, .grid-table td { padding: 4px 2px; font-size: 12px; }
 }
 
-.adj-input { width: 60px; text-align: center; font-size: 14px; font-weight: 700; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 2px 4px; }
+.adj-input { width: 56px; text-align: center; font-size: 14px; font-weight: 700; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 2px 4px; }
 .adj-input:focus { border-color: var(--accent); }
+.adj-input.has-override { border-color: var(--blue); color: var(--blue); }
 .week-header-cell { background: var(--accent) !important; color: #fff !important; font-weight: 700 !important; font-size: 12px !important; }
 
 /* Theme Toggle */
@@ -201,9 +216,36 @@ html.light .toggle-thumb { transform: translateX(18px); }
 
 /* Data Management */
 .data-mgmt-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.backup-status-line { font-size: 12px; color: var(--text-dim); margin-top: 10px; }
+.backup-status-line .ok { color: var(--green); }
+.backup-status-line .stale { color: var(--yellow); }
+
+/* Backup reminder banner */
+.backup-banner { display: none; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(243,156,18,0.15); border-bottom: 1px solid var(--yellow); font-size: 13px; color: var(--text); }
+.backup-banner.show { display: flex; }
+.backup-banner .msg { flex: 1; }
+.backup-banner .close { background: transparent; color: var(--text-dim); font-size: 16px; padding: 0 6px; }
 
 /* SIS ID display */
 .student-row .sis-extra { color: var(--text-dim); font-size: 11px; font-style: italic; }
+
+/* Print */
+.print-header { display: none; }
+@media print {
+  .topbar, .nav, .period-tabs, .grid-controls, .code-hint, .toast,
+  .modal-overlay, .empty-state, .settings-section, .roster-header,
+  .bulk-import-section { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+  .print-header { display: block; color: #000; font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+  .print-header .sub { font-size: 12px; font-weight: 400; color: #333; }
+  .page { padding: 0; }
+  .grid-wrap { overflow: visible; }
+  .grid-table { min-width: 0; width: 100%; }
+  .grid-table th, .grid-table td { border: 1px solid #000 !important; color: #000 !important; background: #fff !important; position: static !important; font-size: 10px; padding: 3px 2px; }
+  .comment-cell { color: #000 !important; }
+  .adj-input { border: none; color: #000; }
+  .backup-banner { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -223,8 +265,14 @@ html.light .toggle-thumb { transform: translateX(18px); }
   <button class="active" data-page="dashboard">Dashboard</button>
   <button data-page="entry">Entry Grid</button>
   <button data-page="roster">Roster</button>
-  <button data-page="export">Export</button>
+  <button data-page="export" id="nav-export">Export</button>
   <button data-page="settings">Settings</button>
+</div>
+
+<div class="backup-banner" id="backup-banner">
+  <span class="msg" id="backup-banner-msg"></span>
+  <button class="btn btn-sm btn-accent" id="backup-banner-now">Back Up Now</button>
+  <button class="close" id="backup-banner-close" title="Dismiss for this session">✕</button>
 </div>
 
 <div class="period-tabs" id="period-tabs">
@@ -244,11 +292,13 @@ html.light .toggle-thumb { transform: translateX(18px); }
 
 <!-- Entry Grid -->
 <div class="page" id="page-entry">
+  <div class="print-header" id="print-header"></div>
   <div class="grid-controls">
     <label>Week of:</label>
     <input type="date" id="week-start" />
+    <button class="btn btn-outline btn-sm" id="print-grid">🖨 Print</button>
   </div>
-  <div class="code-hint" id="code-hint">Click a cell and type a code: <strong>A</strong>, <strong>N</strong>, <strong>P</strong>, <strong>NP</strong>, <strong>TN</strong>, <strong>TP</strong>, <strong>TNP</strong>, <strong>EX</strong>, <strong>MED</strong>, <strong>T</strong> — then press Enter to advance.</div>
+  <div class="code-hint" id="code-hint"></div>
   <div class="grid-wrap">
     <table class="grid-table" id="entry-table">
       <thead id="entry-thead"></thead>
@@ -297,7 +347,7 @@ html.light .toggle-thumb { transform: translateX(18px); }
 <div class="page" id="page-export">
   <div class="settings-section">
     <h3>Step 1: Import Canvas Roster</h3>
-    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Download your gradebook from Canvas as CSV, then upload it here. The app matches students by ID and fills in their weekly points.</p>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Download your gradebook from Canvas as CSV (Grades &rarr; Export), then upload it here. The app matches students by ID and fills in their weekly points.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
       <label class="btn btn-accent" style="cursor:pointer;">
         Upload CSV
@@ -315,9 +365,12 @@ html.light .toggle-thumb { transform: translateX(18px); }
   <div class="settings-section" id="export-preview-section" style="display:none;">
     <h3>Step 2: Review &amp; Export</h3>
     <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+      <label style="font-size:13px;color:var(--text-dim);">Assignment name:</label>
+      <input type="text" id="export-assignment-name" style="min-width:220px;" />
       <span id="export-match-stats" style="font-size:13px;color:var(--text-dim);"></span>
       <button class="btn btn-accent" id="export-download">Download Canvas CSV</button>
     </div>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">Points include any manual adjustments. The CSV contains Canvas's 5 required columns plus a "Points Possible" row; on import, map the new column to "A new assignment".</p>
     <div class="grid-wrap">
       <table class="grid-table" id="export-table">
         <thead id="export-thead"></thead>
@@ -339,25 +392,59 @@ html.light .toggle-thumb { transform: translateX(18px); }
   <div class="settings-section">
     <h3>Weekly Points Total</h3>
     <div class="weekly-pts-setting">
-      <label>Max points per week:</label>
+      <label>Max points per grading window:</label>
       <input type="number" id="weekly-pts-total" min="1" max="1000" value="100" />
     </div>
   </div>
   <div class="settings-section">
     <h3>Code Deductions</h3>
     <div id="code-settings"></div>
+    <div class="add-code-form" id="add-code-form">
+      <input type="text" id="new-code" placeholder="CODE" maxlength="4" style="max-width:80px;text-transform:uppercase;" />
+      <input type="text" id="new-code-meaning" placeholder="Meaning" />
+      <input type="number" id="new-code-deduction" placeholder="Pts" min="0" max="1000" value="0" />
+      <button class="btn btn-accent btn-sm" id="add-code-btn">Add Custom Code</button>
+      <div class="flag-checks">
+        Counts as:
+        <label><input type="checkbox" id="flag-absence"> Absence</label>
+        <label><input type="checkbox" id="flag-noDress"> Non-suit</label>
+        <label><input type="checkbox" id="flag-noPart"> Non-participation</label>
+        <label><input type="checkbox" id="flag-tardy"> Tardy</label>
+        <label><input type="checkbox" id="flag-excused"> Excused</label>
+      </div>
+    </div>
   </div>
   <div class="settings-section">
+    <h3>Comment Thresholds</h3>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">The comment ladder fires the first matching rule, top to bottom. These cutoffs are yours to tune.</p>
+    <div id="threshold-settings"></div>
+  </div>
+  <div class="settings-section" id="features-section">
+    <h3>Features</h3>
+    <div class="feature-row"><label><input type="checkbox" id="tier2-toggle"> Tier 2: Print, clear entries, Canvas CSV export</label></div>
+    <div class="feature-row"><label><input type="checkbox" id="tier3-toggle"> Tier 3: Custom codes</label></div>
+  </div>
+  <div class="settings-section" id="data-mgmt-section">
     <h3>Data Management</h3>
-    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Clear entry data while keeping your roster intact, or reset everything.</p>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Clear entry data while keeping your roster intact, back up everything to a file, or restore from a backup. <strong>Tip:</strong> set the backup file inside your district-synced Google&nbsp;Drive or OneDrive folder — your data then lives in district storage, under district security, just like your spreadsheets.</p>
     <div class="data-mgmt-btns">
+      <button class="btn btn-accent" id="backup-now">Back Up Now</button>
+      <button class="btn btn-outline" id="backup-choose" style="display:none;">Choose Backup File…</button>
+      <button class="btn btn-outline" id="backup-download">Download Backup (JSON)</button>
+      <label class="btn btn-outline" style="cursor:pointer;">
+        Restore Backup
+        <input type="file" id="backup-restore" accept=".json" style="display:none;" />
+      </label>
+    </div>
+    <div class="backup-status-line" id="backup-status">Last backup: never</div>
+    <div class="data-mgmt-btns" style="margin-top:14px;">
       <button class="btn btn-outline" id="clear-week-data">Clear Current Week Entries</button>
       <button class="btn btn-danger" id="clear-all-entries">Clear All Entry Data</button>
     </div>
   </div>
   <div class="settings-section">
     <h3>About</h3>
-    <p style="font-size:13px;color:var(--text-dim);">PhysEd Pro v2.0<br>Offline PE grading &amp; participation tracker.<br>Bulk import, keyboard entry, SIS ID support.</p>
+    <p style="font-size:13px;color:var(--text-dim);">PhysEd Pro v3.1<br>Offline PE grading &amp; participation tracker.<br>IndexedDB storage, priority-ladder comments, manual adjustments, print, custom codes, backup-to-folder.<br><br>Privacy: this app has no server and transmits nothing. All data stays on this device unless you back it up to a location you choose.</p>
   </div>
 </div>
 
@@ -373,136 +460,84 @@ html.light .toggle-thumb { transform: translateX(18px); }
 
 <div class="toast" id="toast"></div>
 
+<script src="./logic.js"></script>
+<script src="./storage.js"></script>
 <script>
-const DEFAULT_CODES = [
-  { code: 'A', meaning: 'Absent', deduction: 10 },
-  { code: 'N', meaning: 'Non-suit', deduction: 5 },
-  { code: 'P', meaning: 'Non-participation', deduction: 5 },
-  { code: 'NP', meaning: 'Non-suit + Non-participation', deduction: 10 },
-  { code: 'TN', meaning: 'Tardy + Non-suit', deduction: 5 },
-  { code: 'TP', meaning: 'Tardy + Non-participation', deduction: 5 },
-  { code: 'TNP', meaning: 'Tardy + Non-suit + Non-participation', deduction: 10 },
-  { code: 'EX', meaning: 'Excused', deduction: 0 },
-  { code: 'MED', meaning: 'Medically Excused', deduction: 0 },
-  { code: 'T', meaning: 'Tardy', deduction: 0 },
-];
-
-let _data = { students: [], entries: {}, settings: {}, _nextId: 1 };
-
-function _load() {
-  try {
-    const raw = localStorage.getItem('physed_pro_data');
-    if (raw) { _data = JSON.parse(raw); }
-    else { _data = { students: [], entries: {}, settings: {}, _nextId: 1 }; }
-    if (!_data._nextId) _data._nextId = 1;
-    if (!Array.isArray(_data.students)) _data.students = [];
-    if (!_data.entries || typeof _data.entries !== 'object') _data.entries = {};
-    if (!_data.settings || typeof _data.settings !== 'object') _data.settings = {};
-    const maxId = _data.students.reduce((m, s) => Math.max(m, s.id || 0), 0);
-    if (_data._nextId <= maxId) _data._nextId = maxId + 1;
-  } catch(e) {
-    console.error('Storage load error — resetting:', e);
-    _data = { students: [], entries: {}, settings: {}, _nextId: 1 };
-  }
-}
-
-function _save() {
-  try { localStorage.setItem('physed_pro_data', JSON.stringify(_data)); }
-  catch(e) { console.error('Storage save error:', e); toast('Storage full — clear old browser data'); }
-}
-
-async function openDB() { _load(); }
-async function dbGet(store, key) {
-  if (store === 'settings') return _data.settings[key] || undefined;
-  if (store === 'students') return _data.students.find(s => s.id === key);
-  if (store === 'entries') return _data.entries[key] ? { id: key, ..._data.entries[key] } : undefined;
-}
-async function dbGetAll(store) {
-  if (store === 'students') return [..._data.students];
-  if (store === 'entries') return Object.entries(_data.entries).map(([id, e]) => ({ id, ...e }));
-  if (store === 'settings') return Object.values(_data.settings);
-  return [];
-}
-async function dbGetByIndex(store, index, value) {
-  if (store === 'students' && index === 'period') return _data.students.filter(s => s.period === value);
-  if (store === 'entries' && index === 'period')
-    return Object.entries(_data.entries).filter(([, e]) => e.period === value).map(([id, e]) => ({ id, ...e }));
-  if (store === 'entries' && index === 'studentId')
-    return Object.entries(_data.entries).filter(([, e]) => e.studentId === value).map(([id, e]) => ({ id, ...e }));
-  return [];
-}
-async function dbPut(store, data) {
-  if (store === 'settings') { _data.settings[data.key] = data; }
-  else if (store === 'students') {
-    if (!data.id) { data.id = _data._nextId++; _data.students.push(data); }
-    else {
-      const idx = _data.students.findIndex(s => s.id === data.id);
-      if (idx >= 0) _data.students[idx] = data; else _data.students.push(data);
-    }
-  } else if (store === 'entries') {
-    const { id, ...rest } = data; _data.entries[id] = rest;
-  }
-  _save(); return data.id;
-}
-async function dbDelete(store, key) {
-  if (store === 'students') _data.students = _data.students.filter(s => s.id !== key);
-  else if (store === 'entries') delete _data.entries[key];
-  else if (store === 'settings') delete _data.settings[key];
-  _save();
-}
+/* ============================================================
+   PhysEd Pro v3.0 — UI layer.
+   Pure logic lives in logic.js; persistence in storage.js.
+   ============================================================ */
 
 let currentPage = 'dashboard';
 let currentPeriod = 1;
-let settings = { weeklyTotal: 100, codes: [...DEFAULT_CODES] };
+let settings = defaultSettings();
 let weekStart = getMonday(new Date());
+let canvasRoster = [];
 
-function getMonday(d) {
-  const dt = new Date(d); const day = dt.getDay();
-  dt.setDate(dt.getDate() - day + (day === 0 ? -6 : 1));
-  dt.setHours(0,0,0,0); return dt;
+function defaultSettings() {
+  return {
+    weeklyTotal: 100,
+    codes: DEFAULT_CODES.map(c => ({ ...c, flags: { ...c.flags } })),
+    thresholds: { ...DEFAULT_THRESHOLDS },
+    tiers: { tier2: true, tier3: true },
+  };
 }
-function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
-function getWeekDates(start) {
-  const dates = [];
-  for (let i = 0; i < 5; i++) dates.push(addDays(start, i));
-  for (let i = 7; i < 12; i++) dates.push(addDays(start, i));
-  return dates;
+
+/* v2 settings lacked flags/thresholds/tiers — patch them in. */
+function normalizeSettings(s) {
+  if (!s.weeklyTotal || s.weeklyTotal < 1) s.weeklyTotal = 100;
+  if (!Array.isArray(s.codes) || !s.codes.length) s.codes = DEFAULT_CODES.map(c => ({ ...c, flags: { ...c.flags } }));
+  for (const c of s.codes) {
+    if (!c.flags) {
+      const def = DEFAULT_CODES.find(d => d.code === c.code);
+      c.flags = def ? { ...def.flags } : {};
+      c.custom = def ? false : true;
+    }
+  }
+  s.thresholds = Object.assign({ ...DEFAULT_THRESHOLDS }, s.thresholds || {});
+  s.tiers = Object.assign({ tier2: true, tier3: true }, s.tiers || {});
+  return s;
 }
-function formatDate(d) { return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
-function dateKey(d) { return d.toISOString().split('T')[0]; }
-function entryId(studentId, date) { return `${studentId}_${date}`; }
 
 async function loadSettings() {
-  const s = await dbGet('settings', 'main');
-  if (s) { settings = s.value; if (!settings.codes) settings.codes = [...DEFAULT_CODES]; if (!settings.weeklyTotal) settings.weeklyTotal = 100; }
+  const rec = await dbGet('settings', 'main');
+  if (rec && rec.value) settings = normalizeSettings(rec.value);
+  else settings = defaultSettings();
 }
 async function saveSettings() { await dbPut('settings', { key: 'main', value: settings }); }
+
 async function loadWeekStart() {
   const w = await dbGet('settings', 'weekStart');
-  if (w) weekStart = new Date(w.value);
+  if (w && w.value) weekStart = getMonday(parseDateKey(w.value));
   document.getElementById('week-start').value = dateKey(weekStart);
 }
 async function saveWeekStart() { await dbPut('settings', { key: 'weekStart', value: dateKey(weekStart) }); }
 
-function calcPoints(codes, weekDates) {
-  let total = settings.weeklyTotal;
-  for (const date of weekDates) {
-    const code = codes[dateKey(date)];
-    if (code) { const def = settings.codes.find(c => c.code === code); if (def) total -= def.deduction; }
-  }
-  return Math.max(0, total);
+async function loadCanvasRoster() {
+  const rec = await dbGet('settings', 'canvasRoster');
+  canvasRoster = (rec && Array.isArray(rec.value)) ? rec.value : [];
 }
-function calcComment(codes, weekDates) {
-  const allCodes = weekDates.map(d => codes[dateKey(d)]).filter(Boolean);
-  if (allCodes.length === 0) return 'No entries this week.';
-  if (allCodes.includes('EX')) return 'Excused for the day.';
-  if (allCodes.includes('NP') || allCodes.includes('TNP')) return 'Non-suit and non-participation impacted points.';
-  if (allCodes.includes('P') || allCodes.includes('TP')) return 'Non-participation impacted points.';
-  if (allCodes.includes('N') || allCodes.includes('TN')) return 'Not dressed affected participation.';
-  if (allCodes.includes('A')) return 'Absence impacted points.';
-  return 'Good participation this week.';
+async function saveCanvasRoster() { await dbPut('settings', { key: 'canvasRoster', value: canvasRoster }); }
+
+/* ---------- Overrides (manual weekly adjustments + custom comments) ---------- */
+async function getOverridesForWeek(wk) {
+  const list = await dbGetByIndex('overrides', 'weekKey', wk);
+  const map = {};
+  for (const o of list) map[o.studentId] = o;
+  return map;
+}
+async function saveOverride(studentId, wk, patch) {
+  const id = `${studentId}_${wk}`;
+  let rec = await dbGet('overrides', id);
+  if (!rec) rec = { id, studentId, weekKey: wk, pts: null, comment: null };
+  Object.assign(rec, patch);
+  const empty = (rec.pts === null || rec.pts === undefined) && !(rec.comment && rec.comment.trim());
+  if (empty) { await dbDelete('overrides', id); return null; }
+  await dbPut('overrides', rec);
+  return rec;
 }
 
+/* ---------- Navigation ---------- */
 const navButtons = document.querySelectorAll('.nav button');
 const pages = document.querySelectorAll('.page');
 const periodTabs = document.querySelectorAll('#period-tabs button');
@@ -536,10 +571,23 @@ function renderCurrentPage() {
   else if (currentPage === 'settings') renderSettings();
 }
 
+/* ---------- Tier gating (feature-flag layer, spec §5) ---------- */
+function applyTiers() {
+  const t2 = settings.tiers.tier2, t3 = settings.tiers.tier3;
+  document.getElementById('nav-export').style.display = t2 ? '' : 'none';
+  document.getElementById('print-grid').style.display = t2 ? '' : 'none';
+  document.getElementById('clear-week-data').style.display = t2 ? '' : 'none';
+  document.getElementById('clear-all-entries').style.display = t2 ? '' : 'none';
+  document.getElementById('add-code-form').style.display = t3 ? 'flex' : 'none';
+}
+
+/* ---------- Dashboard ---------- */
 async function renderDashboard() {
   const allStudents = await dbGetAll('students');
   const allEntries = await dbGetAll('entries');
   const weekDates = getWeekDates(weekStart);
+  const wk = weekKeyOf(weekStart);
+  const ovMap = await getOverridesForWeek(wk);
   const today = dateKey(new Date());
   const todayEntries = allEntries.filter(e => e.date === today).length;
   document.getElementById('dash-cards').innerHTML = `
@@ -548,23 +596,26 @@ async function renderDashboard() {
     <div class="dash-card"><div class="num">${todayEntries}</div><div class="label">Today's Entries</div></div>
     <div class="dash-card"><div class="num">${settings.weeklyTotal}</div><div class="label">Weekly Pts Max</div></div>
   `;
+  const entryMap = {};
+  allEntries.forEach(e => { entryMap[e.id] = e.code; });
   let periodsHtml = '';
   for (let p = 1; p <= 6; p++) {
     const students = allStudents.filter(s => s.period === p);
     if (!students.length) continue;
-    const entryMap = {};
-    allEntries.filter(e => e.period === p).forEach(e => { entryMap[e.id] = e.code; });
     let totalPts = 0;
     students.forEach(s => {
       const codes = {};
       weekDates.forEach(d => { const eid = entryId(s.id, dateKey(d)); if (entryMap[eid]) codes[dateKey(d)] = entryMap[eid]; });
-      totalPts += calcPoints(codes, weekDates);
+      const auto = calcPoints(codes, weekDates, settings);
+      const ov = ovMap[s.id];
+      totalPts += effectivePoints(auto, ov ? ov.pts : null);
     });
     periodsHtml += `<div class="dash-period"><h3>Period ${p}</h3><span class="stat">${students.length} students &middot; Avg: ${Math.round(totalPts / students.length)}/${settings.weeklyTotal} pts</span></div>`;
   }
   document.getElementById('dash-periods').innerHTML = periodsHtml || '<div class="empty-state"><h3>Welcome to PhysEd Pro</h3><p>Head to the Roster tab to add students.</p></div>';
 }
 
+/* ---------- Roster ---------- */
 async function renderRoster() {
   const students = await dbGetByIndex('students', 'period', currentPeriod);
   students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -600,7 +651,7 @@ async function clearAllStudents() {
   toast(`Period ${currentPeriod} cleared`); renderRoster();
 }
 
-// ===== BULK IMPORT =====
+/* ---------- Bulk import ---------- */
 document.getElementById('roster-csv-file').addEventListener('change', async e => {
   const file = e.target.files[0]; if (!file) return;
   await importRosterFromCSV(await file.text()); e.target.value = '';
@@ -615,7 +666,6 @@ document.getElementById('roster-paste-toggle').addEventListener('click', () => {
 document.getElementById('roster-paste-import').addEventListener('click', async () => {
   const text = document.getElementById('roster-paste-area').value.trim();
   if (!text) { toast('Paste data first'); return; }
-  // Detect if it's CSV (has commas and a "Student" header) or plain names
   if (text.includes(',') && /student/i.test(text.split('\n')[0])) {
     await importRosterFromCSV(text);
   } else {
@@ -626,12 +676,13 @@ document.getElementById('roster-paste-import').addEventListener('click', async (
 async function bulkImportNames(text) {
   const names = text.split(/\r?\n/).map(n => n.trim()).filter(Boolean);
   if (!names.length) { toast('No names found'); return; }
+  const existing = await dbGetByIndex('students', 'period', currentPeriod);
+  const have = new Set(existing.map(s => s.name));
   let added = 0;
   for (const name of names) {
-    const existing = _data.students.find(s => s.name === name && s.period === currentPeriod);
-    if (!existing) {
+    if (!have.has(name)) {
       await dbPut('students', { name, sid: '', period: currentPeriod });
-      added++;
+      have.add(name); added++;
     }
   }
   document.getElementById('roster-paste-area').value = '';
@@ -645,37 +696,34 @@ async function importRosterFromCSV(text) {
   const parsed = parseCSV(text);
   if (parsed === null) { toast('Invalid CSV — needs "Student" and "ID" columns'); return; }
   if (!parsed.length) { toast('No student rows found in CSV'); return; }
+  const allStudents = await dbGetAll('students');
   let added = 0, updated = 0;
   for (const row of parsed) {
-    // Extract period from Section column (e.g., "Period 1" → 1)
     let period = currentPeriod;
     const secMatch = (row.section || '').match(/period\s*(\d+)/i);
     if (secMatch) period = parseInt(secMatch[1]);
-    // Convert "Last, First" to "First Last"
     let name = row.student;
     if (name.includes(',')) {
       const parts = name.split(',').map(s => s.trim());
       if (parts.length === 2) name = parts[1] + ' ' + parts[0];
     }
     const sid = row.id;
-    const sisUserId = row.sisUserId || '';
-    const sisLoginId = row.sisLoginId || '';
-    // Check if student already exists (by sid match)
-    const existing = _data.students.find(s => s.sid === sid && sid);
+    const existing = allStudents.find(s => sid && s.sid === sid);
     if (existing) {
-      existing.sisUserId = sisUserId;
-      existing.sisLoginId = sisLoginId;
+      existing.sisUserId = row.sisUserId || '';
+      existing.sisLoginId = row.sisLoginId || '';
       if (!existing.name || existing.name === name) existing.name = name;
       existing.period = period;
       await dbPut('students', existing);
       updated++;
     } else {
-      await dbPut('students', { name, sid, sisUserId, sisLoginId, period });
+      const rec = { name, sid, sisUserId: row.sisUserId || '', sisLoginId: row.sisLoginId || '', period };
+      await dbPut('students', rec);
+      allStudents.push(rec);
       added++;
     }
   }
-  // Also store as canvasRoster for export page
-  canvasRoster = parsed; _data.canvasRoster = canvasRoster; _save();
+  canvasRoster = parsed; await saveCanvasRoster();
   document.getElementById('roster-paste-area').value = '';
   document.getElementById('roster-paste-area').style.display = 'none';
   document.getElementById('roster-paste-actions').style.display = 'none';
@@ -692,7 +740,7 @@ async function addStudent() {
     await dbPut('students', { name, sid, period: currentPeriod });
     nameEl.value = ''; sidEl.value = ''; nameEl.focus();
     toast('Student added'); renderRoster();
-  } catch(e) { toast('Error adding student — check console'); }
+  } catch(e) { console.error(e); toast('Error adding student — check console'); }
 }
 
 window.editStudent = async function(id) {
@@ -709,11 +757,16 @@ window.deleteStudent = async function(id) {
   toast('Student removed'); renderRoster();
 };
 
+/* ---------- Entry Grid ---------- */
 let pickerTarget = null;
 document.getElementById('week-start').addEventListener('change', e => {
-  const d = new Date(e.target.value + 'T00:00:00');
+  const d = parseDateKey(e.target.value);
   if (!isNaN(d)) { weekStart = getMonday(d); e.target.value = dateKey(weekStart); saveWeekStart(); renderEntryGrid(); }
 });
+
+function codeHintText() {
+  return 'Click a cell and type a code: ' + settings.codes.map(c => `<strong>${escHtml(c.code)}</strong>`).join(', ') + ' — then press Enter to advance. Click Pts "Adj" to override a total; click a comment to edit it.';
+}
 
 async function renderEntryGrid() {
   const students = await dbGetByIndex('students', 'period', currentPeriod);
@@ -721,32 +774,60 @@ async function renderEntryGrid() {
   const thead = document.getElementById('entry-thead');
   const tbody = document.getElementById('entry-tbody');
   const empty = document.getElementById('entry-empty');
+  document.getElementById('code-hint').innerHTML = codeHintText();
   if (!students.length) { thead.innerHTML = ''; tbody.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   const weekDates = getWeekDates(weekStart);
+  const wk = weekKeyOf(weekStart);
+  const ovMap = await getOverridesForWeek(wk);
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
   const entryMap = {};
   (await dbGetByIndex('entries', 'period', currentPeriod)).forEach(e => { entryMap[e.id] = e.code; });
-  let hdr = `<tr><th class="name-header">Student</th><th colspan="5" class="week-header-cell">Week 1 (${formatDate(weekDates[0])})</th><th colspan="5" class="week-header-cell">Week 2 (${formatDate(weekDates[5])})</th><th class="pts-header">Pts</th><th>Comment</th></tr><tr><th class="name-header"></th>`;
+  let hdr = `<tr><th class="name-header">Student</th><th colspan="5" class="week-header-cell">Week 1 (${formatDate(weekDates[0])})</th><th colspan="5" class="week-header-cell">Week 2 (${formatDate(weekDates[5])})</th><th class="pts-header">Pts</th><th class="pts-header">Adj</th><th>Comment</th></tr><tr><th class="name-header"></th>`;
   for (let i = 0; i < 10; i++) hdr += `<th class="day-header">${dayNames[i%5]}<br><span style="font-size:10px;font-weight:400;">${formatDate(weekDates[i])}</span></th>`;
-  hdr += '<th class="pts-header"></th><th></th></tr>';
+  hdr += '<th class="pts-header"></th><th class="pts-header"></th><th></th></tr>';
   thead.innerHTML = hdr;
   let rows = '';
   for (const s of students) {
     const codes = {};
     weekDates.forEach(d => { const eid = entryId(s.id, dateKey(d)); if (entryMap[eid]) codes[dateKey(d)] = entryMap[eid]; });
-    const pts = calcPoints(codes, weekDates);
+    const autoPts = calcPoints(codes, weekDates, settings);
+    const ov = ovMap[s.id] || null;
+    const ptsOverride = ov && ov.pts !== null && ov.pts !== undefined ? ov.pts : null;
+    const pts = effectivePoints(autoPts, ptsOverride);
     const pc = pts >= settings.weeklyTotal ? 'full' : pts >= settings.weeklyTotal * 0.7 ? 'partial' : 'low';
+    const autoComment = calcComment(codes, weekDates, settings);
+    const customComment = ov && ov.comment && ov.comment.trim() ? ov.comment : null;
     rows += `<tr><td class="name-cell" title="${escHtml(s.name)}">${escHtml(s.name)}</td>`;
     for (const d of weekDates) { const dk = dateKey(d); const code = codes[dk]||''; rows += `<td class="code-cell" data-code="${code}" data-student="${s.id}" data-date="${dk}">${code}</td>`; }
-    rows += `<td class="pts-cell ${pc}">${pts}</td><td class="comment-cell">${escHtml(calcComment(codes, weekDates))}</td></tr>`;
+    rows += `<td class="pts-cell ${pc}" ${ptsOverride !== null ? `title="Auto: ${autoPts}"` : ''}>${pts}${ptsOverride !== null ? `<span class="auto-note">auto ${autoPts}</span>` : ''}</td>`;
+    rows += `<td><input type="number" class="adj-input ${ptsOverride !== null ? 'has-override' : ''}" data-student="${s.id}" value="${ptsOverride !== null ? ptsOverride : ''}" placeholder="—" min="0" max="999" /></td>`;
+    rows += `<td class="comment-cell ${customComment ? 'custom' : ''}" data-student="${s.id}" title="Click to edit">${escHtml(customComment || autoComment)}${customComment ? ' ✎' : ''}</td></tr>`;
   }
   tbody.innerHTML = rows;
   tbody.querySelectorAll('.code-cell').forEach(cell => {
     cell.addEventListener('click', () => startInlineEdit(cell));
   });
+  tbody.querySelectorAll('.adj-input').forEach(input => {
+    input.addEventListener('change', async () => {
+      const sid = parseInt(input.dataset.student);
+      const raw = input.value.trim();
+      if (raw === '') {
+        await saveOverride(sid, wk, { pts: null });
+        toast('Override cleared');
+      } else {
+        const val = parseInt(raw);
+        if (isNaN(val) || val < 0) { toast('Enter a number ≥ 0'); renderEntryGrid(); return; }
+        await saveOverride(sid, wk, { pts: val });
+        toast('Weekly total adjusted');
+      }
+      renderEntryGrid();
+    });
+  });
+  tbody.querySelectorAll('.comment-cell').forEach(cell => {
+    cell.addEventListener('click', () => startCommentEdit(cell, wk));
+  });
 
-  // Handle pending edit (auto-advance after Enter)
   if (pendingEditCell) {
     const { date, studentIndex } = pendingEditCell;
     pendingEditCell = null;
@@ -757,6 +838,35 @@ async function renderEntryGrid() {
   }
 }
 
+/* ---------- Comment editing (auto-fill, teacher-editable) ---------- */
+async function startCommentEdit(cell, wk) {
+  if (cell.querySelector('textarea')) return;
+  const sid = parseInt(cell.dataset.student);
+  const existing = await dbGet('overrides', `${sid}_${wk}`);
+  const current = existing && existing.comment ? existing.comment : '';
+  const ta = document.createElement('textarea');
+  ta.className = 'comment-edit';
+  ta.value = current;
+  ta.placeholder = 'Custom comment (leave empty to use auto-comment)';
+  cell.textContent = '';
+  cell.appendChild(ta);
+  ta.focus();
+  let done = false;
+  const save = async () => {
+    if (done) return; done = true;
+    const text = ta.value.trim();
+    await saveOverride(sid, wk, { comment: text || null });
+    toast(text ? 'Comment saved' : 'Reverted to auto-comment');
+    renderEntryGrid();
+  };
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); save(); }
+    else if (e.key === 'Escape') { e.preventDefault(); done = true; renderEntryGrid(); }
+  });
+  ta.addEventListener('blur', () => { setTimeout(() => { if (!done) save(); }, 100); });
+}
+
+/* ---------- Code picker modal (tap entry) ---------- */
 const modal = document.getElementById('code-modal');
 const pickerInfo = document.getElementById('picker-info');
 const pickerCodes = document.getElementById('picker-codes');
@@ -764,11 +874,11 @@ const pickerClear = document.getElementById('picker-clear');
 
 function openPicker(studentId, date, name, currentCode) {
   pickerTarget = { studentId, date };
-  const d = new Date(date + 'T00:00:00');
+  const d = parseDateKey(date);
   pickerInfo.textContent = `${name} — ${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
   pickerCodes.innerHTML = settings.codes.map(c => `
-    <button class="code-btn ${currentCode === c.code ? 'selected' : ''}" data-code="${c.code}">
-      ${c.code}<span class="code-label">${c.deduction > 0 ? '-' + c.deduction : c.meaning}</span>
+    <button class="code-btn ${currentCode === c.code ? 'selected' : ''}" data-code="${escHtml(c.code)}">
+      ${escHtml(c.code)}<span class="code-label">${c.deduction > 0 ? '-' + c.deduction : escHtml(c.meaning)}</span>
     </button>`).join('');
   pickerCodes.querySelectorAll('.code-btn').forEach(btn => btn.addEventListener('click', () => selectCode(btn.dataset.code)));
   modal.classList.add('open');
@@ -787,7 +897,7 @@ async function selectCode(code) {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePicker(); });
 
-// ===== INLINE CODE ENTRY =====
+/* ---------- Inline keyboard code entry ---------- */
 let pendingEditCell = null;
 
 function startInlineEdit(cell) {
@@ -804,7 +914,7 @@ function startInlineEdit(cell) {
   input.setAttribute('autocorrect', 'off');
   input.setAttribute('autocomplete', 'off');
   input.setAttribute('spellcheck', 'false');
-  input.maxLength = 3;
+  input.maxLength = 4;
 
   cell.textContent = '';
   cell.appendChild(input);
@@ -819,7 +929,7 @@ function startInlineEdit(cell) {
     const validCode = val === '' || settings.codes.some(c => c.code === val);
 
     if (!validCode) {
-      toast('Invalid code: ' + val + '. Use: A, N, P, NP, TN, TP, TNP, EX, MED, T');
+      toast('Invalid code: ' + val + '. Use: ' + settings.codes.map(c => c.code).join(', '));
       saved = false;
       input.value = currentCode;
       input.select();
@@ -856,14 +966,33 @@ function startInlineEdit(cell) {
   });
 }
 
+/* ---------- Print (Tier 2) ---------- */
+document.getElementById('print-grid').addEventListener('click', () => {
+  const weekDates = getWeekDates(weekStart);
+  document.getElementById('print-header').innerHTML =
+    `PhysEd Pro — Period ${currentPeriod}<div class="sub">${formatDate(weekDates[0])} – ${formatDate(weekDates[9])} &middot; Max ${settings.weeklyTotal} pts &middot; Printed ${new Date().toLocaleDateString()}</div>`;
+  window.print();
+});
+
+/* ---------- Settings ---------- */
+const THRESHOLD_LABELS = [
+  ['absCritical', 'Rule 1 — unexcused absences for "multiple absences" comment (≥)', 'int'],
+  ['npCritical', 'Rule 2 — non-participation days for "did not participate" comment (≥)', 'int'],
+  ['dressMajor', 'Rule 3 — non-suit days for "not dressed out" comment (≥)', 'int'],
+  ['tardyMinor', 'Rule 7 — tardies for "late multiple times" comment (≥)', 'int'],
+  ['pctExcellent', 'Rule 10 — % of max points for "Excellent week" (0–100)', 'pct'],
+  ['pctSolid', 'Rule 11 — % of max points for "Solid week" (0–100)', 'pct'],
+];
+
 function renderSettings() {
   document.getElementById('weekly-pts-total').value = settings.weeklyTotal;
   const container = document.getElementById('code-settings');
   container.innerHTML = settings.codes.map((c, i) => `
     <div class="setting-row">
-      <span class="code-tag">${c.code}</span>
-      <span class="meaning">${c.meaning}</span>
-      <input type="number" min="0" max="100" value="${c.deduction}" data-index="${i}" class="deduction-input" />
+      <span class="code-tag">${escHtml(c.code)}</span>
+      <span class="meaning">${escHtml(c.meaning)}${c.custom ? ' <span class="custom-badge">custom</span>' : ''}</span>
+      <input type="number" min="0" max="1000" value="${c.deduction}" data-index="${i}" class="deduction-input" />
+      ${c.custom ? `<button class="btn btn-sm btn-danger" data-delcode="${i}">Del</button>` : ''}
     </div>`).join('');
   container.querySelectorAll('.deduction-input').forEach(input => {
     input.addEventListener('change', async () => {
@@ -874,7 +1003,39 @@ function renderSettings() {
       await saveSettings(); toast('Settings saved');
     });
   });
+  container.querySelectorAll('[data-delcode]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const i = parseInt(btn.dataset.delcode);
+      const c = settings.codes[i];
+      if (!confirm(`Delete custom code ${c.code}? Existing entries using it stay but stop deducting points.`)) return;
+      settings.codes.splice(i, 1);
+      await saveSettings(); toast('Code deleted'); renderSettings();
+    });
+  });
+
+  const tcontainer = document.getElementById('threshold-settings');
+  tcontainer.innerHTML = THRESHOLD_LABELS.map(([key, label, kind]) => {
+    const v = kind === 'pct' ? Math.round(settings.thresholds[key] * 100) : settings.thresholds[key];
+    return `<div class="threshold-row"><label>${label}</label><input type="number" min="${kind === 'pct' ? 0 : 1}" max="${kind === 'pct' ? 100 : 10}" value="${v}" data-tkey="${key}" data-tkind="${kind}" /></div>`;
+  }).join('');
+  tcontainer.querySelectorAll('input').forEach(input => {
+    input.addEventListener('change', async () => {
+      let val = parseInt(input.value);
+      const kind = input.dataset.tkind;
+      if (isNaN(val)) { renderSettings(); return; }
+      if (kind === 'pct') { val = Math.min(100, Math.max(0, val)); settings.thresholds[input.dataset.tkey] = val / 100; }
+      else { val = Math.min(10, Math.max(1, val)); settings.thresholds[input.dataset.tkey] = val; }
+      input.value = val;
+      await saveSettings(); toast('Thresholds saved');
+    });
+  });
+
+  document.getElementById('tier2-toggle').checked = settings.tiers.tier2;
+  document.getElementById('tier3-toggle').checked = settings.tiers.tier3;
+  applyTiers();
+  updateBackupStatus();
 }
+
 document.getElementById('weekly-pts-total').addEventListener('change', async e => {
   const val = parseInt(e.target.value);
   if (isNaN(val) || val < 1) { e.target.value = settings.weeklyTotal; toast('Must be at least 1'); return; }
@@ -882,51 +1043,56 @@ document.getElementById('weekly-pts-total').addEventListener('change', async e =
   await saveSettings(); toast('Weekly total updated');
 });
 
-// ===== CANVAS EXPORT =====
-let canvasRoster = [];
+document.getElementById('add-code-btn').addEventListener('click', async () => {
+  const code = document.getElementById('new-code').value.trim().toUpperCase();
+  const meaning = document.getElementById('new-code-meaning').value.trim();
+  const deduction = parseInt(document.getElementById('new-code-deduction').value) || 0;
+  if (!code) { toast('Enter a code'); return; }
+  if (!/^[A-Z0-9]{1,4}$/.test(code)) { toast('Code: 1–4 letters/numbers'); return; }
+  if (settings.codes.some(c => c.code === code)) { toast(`Code ${code} already exists`); return; }
+  const flags = {};
+  if (document.getElementById('flag-absence').checked) flags.absence = true;
+  if (document.getElementById('flag-noDress').checked) flags.noDress = true;
+  if (document.getElementById('flag-noPart').checked) flags.noPart = true;
+  if (document.getElementById('flag-tardy').checked) flags.tardy = true;
+  if (document.getElementById('flag-excused').checked) flags.excused = true;
+  settings.codes.push({ code, meaning: meaning || code, deduction: Math.max(0, deduction), custom: true, flags });
+  await saveSettings();
+  document.getElementById('new-code').value = '';
+  document.getElementById('new-code-meaning').value = '';
+  document.getElementById('new-code-deduction').value = '0';
+  ['flag-absence','flag-noDress','flag-noPart','flag-tardy','flag-excused'].forEach(id => document.getElementById(id).checked = false);
+  toast(`Custom code ${code} added`); renderSettings();
+});
 
-function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
-  const header = parseCSVLine(lines[0]);
-  const col = {}; header.forEach((h, i) => { col[h.trim().toLowerCase()] = i; });
-  const sc = col['student'] ?? -1, ic = col['id'] ?? -1;
-  if (sc === -1 || ic === -1) return null;
-  const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    const c = parseCSVLine(lines[i]);
-    const name = (c[sc] || '').trim();
-    if (!name || name === 'Points Possible' || name === 'Student, Test') continue;
-    rows.push({ student: name, id: (c[ic]||'').trim(), sisUserId: (c[col['sis user id']]||'').trim(), sisLoginId: (c[col['sis login id']]||'').trim(), section: (c[col['section']]||'').trim() });
-  }
-  return rows;
-}
-function parseCSVLine(line) {
-  const result = []; let current = '', inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (inQ) { if (ch === '"' && line[i+1] === '"') { current += '"'; i++; } else if (ch === '"') { inQ = false; } else { current += ch; } }
-    else { if (ch === '"') { inQ = true; } else if (ch === ',') { result.push(current); current = ''; } else { current += ch; } }
-  }
-  result.push(current); return result;
-}
-function csvEscape(val) {
-  const s = String(val ?? '');
-  return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s;
+document.getElementById('tier2-toggle').addEventListener('change', async e => {
+  settings.tiers.tier2 = e.target.checked; await saveSettings(); applyTiers(); toast('Features updated');
+});
+document.getElementById('tier3-toggle').addEventListener('change', async e => {
+  settings.tiers.tier3 = e.target.checked; await saveSettings(); applyTiers(); toast('Features updated');
+});
+
+/* ---------- Canvas Export (Tier 2) ---------- */
+function defaultAssignmentName() {
+  const weekDates = getWeekDates(weekStart);
+  return `PE Points (${formatDate(weekDates[0])} - ${formatDate(weekDates[9])})`;
 }
 
 async function matchCanvasToPoints() {
   const allStudents = await dbGetAll('students');
   const allEntries = await dbGetAll('entries');
   const weekDates = getWeekDates(weekStart);
+  const wk = weekKeyOf(weekStart);
+  const ovMap = await getOverridesForWeek(wk);
   const entryMap = {}; allEntries.forEach(e => { entryMap[e.id] = e.code; });
   const sidToPoints = {};
   const sisToPoints = {};
   allStudents.forEach(s => {
     const codes = {};
     weekDates.forEach(d => { const eid = entryId(s.id, dateKey(d)); if (entryMap[eid]) codes[dateKey(d)] = entryMap[eid]; });
-    const pts = calcPoints(codes, weekDates);
+    const auto = calcPoints(codes, weekDates, settings);
+    const ov = ovMap[s.id];
+    const pts = effectivePoints(auto, ov ? ov.pts : null);
     if (s.sid) sidToPoints[s.sid] = pts;
     if (s.sisUserId) sisToPoints[s.sisUserId] = pts;
   });
@@ -952,29 +1118,29 @@ document.getElementById('canvas-paste-import').addEventListener('click', () => {
   importCanvasCSV(text);
 });
 
-function importCanvasCSV(text) {
+async function importCanvasCSV(text) {
   const parsed = parseCSV(text);
   if (parsed === null) { toast('Invalid CSV — needs "Student" and "ID" columns'); return; }
   if (!parsed.length) { toast('No student rows found in CSV'); return; }
-  canvasRoster = parsed; _data.canvasRoster = canvasRoster;
-  // Also update matching student records with SIS IDs
+  canvasRoster = parsed; await saveCanvasRoster();
+  const allStudents = await dbGetAll('students');
   let updatedCount = 0;
   for (const row of parsed) {
-    const match = _data.students.find(s => s.sid === row.id || (row.sisUserId && s.sid === row.sisUserId));
+    const match = allStudents.find(s => s.sid === row.id || (row.sisUserId && s.sid === row.sisUserId));
     if (match) {
       match.sisUserId = row.sisUserId || '';
       match.sisLoginId = row.sisLoginId || '';
+      await dbPut('students', match);
       updatedCount++;
     }
   }
-  _save();
   toast(`Imported ${canvasRoster.length} students` + (updatedCount ? `, updated ${updatedCount} SIS IDs` : '')); renderExport();
 }
 
 document.getElementById('export-download').addEventListener('click', async () => {
   const matched = await matchCanvasToPoints();
-  let csv = 'Student,ID,SIS User ID,SIS Login ID,Section,New Assignment\n';
-  matched.forEach(r => { csv += [csvEscape(r.student), csvEscape(r.id), csvEscape(r.sisUserId), csvEscape(r.sisLoginId), csvEscape(r.section), r.matched ? r.points : ''].join(',') + '\n'; });
+  const name = document.getElementById('export-assignment-name').value.trim() || defaultAssignmentName();
+  const csv = buildCanvasExportCSV(matched, name, settings.weeklyTotal);
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
   a.download = `PhysEdPro_Canvas_Export_${dateKey(new Date())}.csv`;
@@ -985,9 +1151,10 @@ document.getElementById('export-download').addEventListener('click', async () =>
 async function renderExport() {
   const preview = document.getElementById('export-preview-section');
   const empty = document.getElementById('export-empty');
-  if (!canvasRoster.length && _data.canvasRoster && _data.canvasRoster.length) canvasRoster = _data.canvasRoster;
   if (!canvasRoster.length) { preview.style.display = 'none'; empty.style.display = 'block'; return; }
   empty.style.display = 'none'; preview.style.display = 'block';
+  const nameInput = document.getElementById('export-assignment-name');
+  if (!nameInput.value.trim()) nameInput.value = defaultAssignmentName();
   const matched = await matchCanvasToPoints();
   const mc = matched.filter(r => r.matched).length, total = matched.length;
   document.getElementById('export-match-stats').innerHTML = `<strong>${mc}</strong> of <strong>${total}</strong> matched — ` + (mc === total ? '<span class="match-yes">All matched!</span>' : `<span class="match-no">${total - mc} unmatched</span>`);
@@ -1002,6 +1169,138 @@ async function renderExport() {
   }).join('');
 }
 
+/* ---------- Data management ---------- */
+document.getElementById('clear-week-data').addEventListener('click', async () => {
+  const weekDates = getWeekDates(weekStart);
+  const wk = weekKeyOf(weekStart);
+  const dateKeys = weekDates.map(d => dateKey(d));
+  const allEntries = await dbGetAll('entries');
+  const weekEntries = allEntries.filter(e => dateKeys.includes(e.date));
+  const weekOverrides = await dbGetByIndex('overrides', 'weekKey', wk);
+  if (!weekEntries.length && !weekOverrides.length) { toast('No entries for this week to clear'); return; }
+  if (!confirm(`Clear ${weekEntries.length} entries and ${weekOverrides.length} adjustments for the week of ${formatDate(weekStart)}? Roster will be kept.`)) return;
+  for (const e of weekEntries) await dbDelete('entries', e.id);
+  for (const o of weekOverrides) await dbDelete('overrides', o.id);
+  toast(`Cleared ${weekEntries.length} entries`);
+  renderCurrentPage();
+});
+
+document.getElementById('clear-all-entries').addEventListener('click', async () => {
+  const allEntries = await dbGetAll('entries');
+  if (!allEntries.length) { toast('No entry data to clear'); return; }
+  if (!confirm(`Clear ALL ${allEntries.length} entries (and all manual adjustments) across all periods and weeks? Roster will be kept.`)) return;
+  await dbClear('entries');
+  await dbClear('overrides');
+  toast(`Cleared all ${allEntries.length} entries`);
+  renderCurrentPage();
+});
+
+/* ---------- Backup to folder (File System Access API) ----------
+   Chrome/Edge: pick a file once (ideally inside the district-synced
+   Drive/OneDrive folder); the handle persists in IndexedDB and
+   "Back Up Now" overwrites it (sync clients keep version history).
+   Firefox/Safari: falls back to a plain download. */
+const FSA_SUPPORTED = typeof window.showSaveFilePicker === 'function';
+
+async function getBackupHandle() {
+  const rec = await dbGet('settings', 'backupHandle');
+  return rec ? rec.handle : null;
+}
+async function recordBackupDone() {
+  await dbPut('settings', { key: 'lastBackupAt', value: new Date().toISOString() });
+  hideBackupBanner();
+  if (currentPage === 'settings') updateBackupStatus();
+}
+async function downloadBackup() {
+  const backup = await exportBackupJSON();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 1)], { type: 'application/json' }));
+  a.download = `PhysEdPro_Backup_${dateKey(new Date())}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  await recordBackupDone();
+  toast('Backup downloaded');
+}
+async function doBackupNow() {
+  if (FSA_SUPPORTED) {
+    const handle = await getBackupHandle();
+    if (handle) {
+      if (await verifyHandlePermission(handle)) {
+        try {
+          await saveBackupToHandle(handle);
+          await recordBackupDone();
+          toast(`Backed up to ${handle.name}`);
+          return;
+        } catch (e) { console.error('Handle write failed, falling back to download:', e); }
+      } else {
+        toast('Backup file permission denied — downloading instead');
+      }
+    }
+  }
+  await downloadBackup();
+}
+async function chooseBackupFile() {
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: 'PhysEdPro_Backup.json',
+      types: [{ description: 'PhysEd Pro Backup', accept: { 'application/json': ['.json'] } }],
+    });
+    await dbPut('settings', { key: 'backupHandle', handle });
+    await saveBackupToHandle(handle);
+    await recordBackupDone();
+    toast(`Backup file set: ${handle.name}`);
+  } catch (e) {
+    if (e && e.name !== 'AbortError') { console.error(e); toast('Could not set backup file'); }
+  }
+}
+async function updateBackupStatus() {
+  const el = document.getElementById('backup-status');
+  const last = await dbGet('settings', 'lastBackupAt');
+  const handle = FSA_SUPPORTED ? await getBackupHandle() : null;
+  const target = handle ? ` → ${escHtml(handle.name)}` : ' (download)';
+  if (!last) { el.innerHTML = `Last backup: <span class="stale">never</span>${target}`; return; }
+  const stale = isBackupStale(last.value, Date.now());
+  const when = new Date(last.value).toLocaleString();
+  el.innerHTML = `Last backup: <span class="${stale ? 'stale' : 'ok'}">${when}</span>${target}`;
+}
+
+/* Reminder banner: shows when there is data but no backup in 7+ days. */
+let bannerDismissed = false;
+function hideBackupBanner() { document.getElementById('backup-banner').classList.remove('show'); }
+async function checkBackupReminder() {
+  if (bannerDismissed) return;
+  const students = await dbGetAll('students');
+  if (!students.length) return;
+  const last = await dbGet('settings', 'lastBackupAt');
+  if (!isBackupStale(last ? last.value : null, Date.now())) return;
+  document.getElementById('backup-banner-msg').textContent = last
+    ? `It's been over a week since your last backup (${new Date(last.value).toLocaleDateString()}).`
+    : 'No backup yet — back up your gradebook to your synced Drive/OneDrive folder.';
+  document.getElementById('backup-banner').classList.add('show');
+}
+document.getElementById('backup-banner-now').addEventListener('click', doBackupNow);
+document.getElementById('backup-banner-close').addEventListener('click', () => { bannerDismissed = true; hideBackupBanner(); });
+document.getElementById('backup-now').addEventListener('click', doBackupNow);
+document.getElementById('backup-choose').addEventListener('click', chooseBackupFile);
+document.getElementById('backup-download').addEventListener('click', downloadBackup);
+
+document.getElementById('backup-restore').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  e.target.value = '';
+  if (!confirm('Restoring a backup REPLACES all current data (roster, entries, settings, adjustments). Continue?')) return;
+  try {
+    const obj = JSON.parse(await file.text());
+    await restoreBackupJSON(obj);
+    await loadSettings(); await loadWeekStart(); await loadCanvasRoster();
+    applyTiers();
+    toast('Backup restored');
+    renderCurrentPage();
+  } catch (err) {
+    console.error(err);
+    toast('Restore failed: ' + err.message);
+  }
+});
+
+/* ---------- Misc ---------- */
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function toast(msg) {
   const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
@@ -1024,36 +1323,19 @@ window.addEventListener('offline', updateOnline);
 
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(() => {}); }
 
-// ===== DATA MANAGEMENT =====
-document.getElementById('clear-week-data').addEventListener('click', async () => {
-  const weekDates = getWeekDates(weekStart);
-  const dateKeys = weekDates.map(d => dateKey(d));
-  const allEntries = await dbGetAll('entries');
-  const weekEntries = allEntries.filter(e => dateKeys.includes(e.date));
-  if (!weekEntries.length) { toast('No entries for this week to clear'); return; }
-  if (!confirm(`Clear ${weekEntries.length} entries for the week of ${formatDate(weekStart)}? Roster will be kept.`)) return;
-  for (const e of weekEntries) await dbDelete('entries', e.id);
-  toast(`Cleared ${weekEntries.length} entries for the week`);
-  renderCurrentPage();
-});
-
-document.getElementById('clear-all-entries').addEventListener('click', async () => {
-  const allEntries = await dbGetAll('entries');
-  if (!allEntries.length) { toast('No entry data to clear'); return; }
-  if (!confirm(`Clear ALL ${allEntries.length} entries across all periods and weeks? Roster will be kept.`)) return;
-  _data.entries = {}; _save();
-  toast(`Cleared all ${allEntries.length} entries`);
-  renderCurrentPage();
-});
-
+/* ---------- Init ---------- */
 async function init() {
   loadTheme();
   await openDB();
   await loadSettings();
   await loadWeekStart();
+  await loadCanvasRoster();
   updateOnline();
+  applyTiers();
+  if (FSA_SUPPORTED) document.getElementById('backup-choose').style.display = '';
   periodTabsContainer.style.display = 'none';
   renderDashboard();
+  checkBackupReminder();
 }
 init();
 </script>
