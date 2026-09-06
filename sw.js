@@ -3,7 +3,7 @@
    (works offline, fast on slow school wifi), refresh the cache in
    the background so the next load picks up updates.
    https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API */
-const CACHE_NAME = 'physed-pro-v3-1';
+const CACHE_NAME = 'physed-pro-v3-2';
 const ASSETS = ['./', './index.html', './logic.js', './storage.js', './manifest.json'];
 
 self.addEventListener('install', e => {

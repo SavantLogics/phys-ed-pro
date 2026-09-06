@@ -109,6 +109,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); bo
 .grid-table thead th.name-header { text-align: left; min-width: 140px; position: sticky; left: 0; z-index: 3; background: var(--surface2); }
 .grid-table thead th.pts-header { min-width: 52px; }
 .grid-table tbody td.name-cell { text-align: left; font-weight: 500; position: sticky; left: 0; background: var(--name-cell-bg); z-index: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+.name-cell .row-num { display: inline-block; min-width: 20px; color: var(--text-dim); font-weight: 400; font-size: 11px; margin-right: 4px; text-align: right; }
 .grid-table tbody tr:nth-child(even) td { background: var(--row-alt); }
 .grid-table tbody tr:nth-child(even) td.name-cell { background: var(--name-cell-bg); }
 
@@ -444,7 +445,7 @@ html.light .toggle-thumb { transform: translateX(18px); }
   </div>
   <div class="settings-section">
     <h3>About</h3>
-    <p style="font-size:13px;color:var(--text-dim);">PhysEd Pro v3.1<br>Offline PE grading &amp; participation tracker.<br>IndexedDB storage, priority-ladder comments, manual adjustments, print, custom codes, backup-to-folder.<br><br>Privacy: this app has no server and transmits nothing. All data stays on this device unless you back it up to a location you choose.</p>
+    <p style="font-size:13px;color:var(--text-dim);">PhysEd Pro v3.2<br>Offline PE grading &amp; participation tracker.<br>IndexedDB storage, priority-ladder comments, manual adjustments, print, custom codes, backup-to-folder.<br>v3.2: last-name sorting, row numbers, iPad keyboard stays up during entry.<br><br>Privacy: this app has no server and transmits nothing. All data stays on this device unless you back it up to a location you choose.</p>
   </div>
 </div>
 
@@ -618,7 +619,7 @@ async function renderDashboard() {
 /* ---------- Roster ---------- */
 async function renderRoster() {
   const students = await dbGetByIndex('students', 'period', currentPeriod);
-  students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  students.sort(byLastName);
   const list = document.getElementById('student-list');
   const empty = document.getElementById('roster-empty');
   const clearWrap = document.getElementById('roster-clear-wrap');
@@ -770,7 +771,7 @@ function codeHintText() {
 
 async function renderEntryGrid() {
   const students = await dbGetByIndex('students', 'period', currentPeriod);
-  students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  students.sort(byLastName);
   const thead = document.getElementById('entry-thead');
   const tbody = document.getElementById('entry-tbody');
   const empty = document.getElementById('entry-empty');
@@ -788,7 +789,8 @@ async function renderEntryGrid() {
   hdr += '<th class="pts-header"></th><th class="pts-header"></th><th></th></tr>';
   thead.innerHTML = hdr;
   let rows = '';
-  for (const s of students) {
+  for (let si = 0; si < students.length; si++) {
+    const s = students[si];
     const codes = {};
     weekDates.forEach(d => { const eid = entryId(s.id, dateKey(d)); if (entryMap[eid]) codes[dateKey(d)] = entryMap[eid]; });
     const autoPts = calcPoints(codes, weekDates, settings);
@@ -798,7 +800,7 @@ async function renderEntryGrid() {
     const pc = pts >= settings.weeklyTotal ? 'full' : pts >= settings.weeklyTotal * 0.7 ? 'partial' : 'low';
     const autoComment = calcComment(codes, weekDates, settings);
     const customComment = ov && ov.comment && ov.comment.trim() ? ov.comment : null;
-    rows += `<tr><td class="name-cell" title="${escHtml(s.name)}">${escHtml(s.name)}</td>`;
+    rows += `<tr data-student="${s.id}"><td class="name-cell" title="${escHtml(s.name)}"><span class="row-num">${si + 1}.</span>${escHtml(s.name)}</td>`;
     for (const d of weekDates) { const dk = dateKey(d); const code = codes[dk]||''; rows += `<td class="code-cell" data-code="${code}" data-student="${s.id}" data-date="${dk}">${code}</td>`; }
     rows += `<td class="pts-cell ${pc}" ${ptsOverride !== null ? `title="Auto: ${autoPts}"` : ''}>${pts}${ptsOverride !== null ? `<span class="auto-note">auto ${autoPts}</span>` : ''}</td>`;
     rows += `<td><input type="number" class="adj-input ${ptsOverride !== null ? 'has-override' : ''}" data-student="${s.id}" value="${ptsOverride !== null ? ptsOverride : ''}" placeholder="—" min="0" max="999" /></td>`;
@@ -827,15 +829,6 @@ async function renderEntryGrid() {
   tbody.querySelectorAll('.comment-cell').forEach(cell => {
     cell.addEventListener('click', () => startCommentEdit(cell, wk));
   });
-
-  if (pendingEditCell) {
-    const { date, studentIndex } = pendingEditCell;
-    pendingEditCell = null;
-    const cells = [...tbody.querySelectorAll(`.code-cell[data-date="${date}"]`)];
-    if (cells[studentIndex]) {
-      setTimeout(() => startInlineEdit(cells[studentIndex]), 50);
-    }
-  }
 }
 
 /* ---------- Comment editing (auto-fill, teacher-editable) ---------- */
@@ -897,8 +890,59 @@ async function selectCode(code) {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePicker(); });
 
-/* ---------- Inline keyboard code entry ---------- */
-let pendingEditCell = null;
+/* ---------- Inline keyboard code entry ----------
+   iPad keyboard fix (v3.2): on Enter we open the next cell's
+   input SYNCHRONOUSLY inside the keydown handler. iOS Safari
+   only keeps the on-screen keyboard up if focus() runs during
+   a user gesture — the old flow (await DB write, full table
+   re-render, setTimeout focus) lost the gesture context, so
+   the keyboard dismissed after every student. Now the grid is
+   never re-rendered mid-entry; only the edited row's Pts and
+   Comment cells are patched in place. */
+function setCellDisplay(cell, code) {
+  cell.textContent = code;
+  cell.dataset.code = code;
+}
+
+async function persistCode(studentId, date, val) {
+  if (val === '') {
+    await dbDelete('entries', entryId(studentId, date));
+  } else {
+    await dbPut('entries', { id: entryId(studentId, date), studentId, period: currentPeriod, date, code: val });
+  }
+  await refreshRowStats(studentId);
+}
+
+/* Recompute one student's Pts + Comment and patch the cells
+   in place — no table rebuild, so focus (and the iPad
+   keyboard) survives. */
+async function refreshRowStats(studentId) {
+  const row = document.querySelector(`#entry-tbody tr[data-student="${studentId}"]`);
+  if (!row) return;
+  const weekDates = getWeekDates(weekStart);
+  const wk = weekKeyOf(weekStart);
+  const dateKeys = new Set(weekDates.map(d => dateKey(d)));
+  const codes = {};
+  (await dbGetByIndex('entries', 'studentId', studentId)).forEach(e => {
+    if (dateKeys.has(e.date)) codes[e.date] = e.code;
+  });
+  const autoPts = calcPoints(codes, weekDates, settings);
+  const ov = await dbGet('overrides', `${studentId}_${wk}`);
+  const ptsOverride = ov && ov.pts !== null && ov.pts !== undefined ? ov.pts : null;
+  const pts = effectivePoints(autoPts, ptsOverride);
+  const pc = pts >= settings.weeklyTotal ? 'full' : pts >= settings.weeklyTotal * 0.7 ? 'partial' : 'low';
+  const ptsCell = row.querySelector('.pts-cell');
+  if (ptsCell) {
+    ptsCell.className = `pts-cell ${pc}`;
+    ptsCell.title = ptsOverride !== null ? `Auto: ${autoPts}` : '';
+    ptsCell.innerHTML = `${pts}${ptsOverride !== null ? `<span class="auto-note">auto ${autoPts}</span>` : ''}`;
+  }
+  const commentCell = row.querySelector('.comment-cell');
+  const customComment = ov && ov.comment && ov.comment.trim() ? ov.comment : null;
+  if (commentCell && !commentCell.querySelector('textarea')) {
+    commentCell.textContent = customComment ? customComment + ' ✎' : calcComment(codes, weekDates, settings);
+  }
+}
 
 function startInlineEdit(cell) {
   if (cell.querySelector('input')) return;
@@ -921,47 +965,48 @@ function startInlineEdit(cell) {
   input.focus();
   input.select();
 
-  let saved = false;
-  const save = async (advance) => {
-    if (saved) return;
-    saved = true;
+  let finished = false;
+
+  /* NOTE: deliberately synchronous up to the focus handoff —
+     no await before startInlineEdit(next), or iOS drops the
+     keyboard. Persistence happens after, in the background. */
+  const commit = (advance) => {
+    if (finished) return;
     const val = input.value.trim().toUpperCase();
     const validCode = val === '' || settings.codes.some(c => c.code === val);
 
     if (!validCode) {
       toast('Invalid code: ' + val + '. Use: ' + settings.codes.map(c => c.code).join(', '));
-      saved = false;
       input.value = currentCode;
       input.select();
       return;
     }
 
-    if (val === '') {
-      await dbDelete('entries', entryId(studentId, date));
-    } else {
-      await dbPut('entries', { id: entryId(studentId, date), studentId, period: currentPeriod, date, code: val });
-    }
+    finished = true;
+    setCellDisplay(cell, val);
 
     if (advance) {
       const allCells = [...document.querySelectorAll(`.code-cell[data-date="${date}"]`)];
-      const currentIdx = allCells.indexOf(cell);
-      if (currentIdx < allCells.length - 1) {
-        pendingEditCell = { date, studentIndex: currentIdx + 1 };
-      }
+      const idx = allCells.indexOf(cell);
+      if (idx > -1 && idx < allCells.length - 1) startInlineEdit(allCells[idx + 1]);
     }
-    renderEntryGrid();
+
+    persistCode(studentId, date, val).catch(err => {
+      console.error(err);
+      toast('Save failed — check console');
+    });
   };
 
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); save(true); }
-    else if (e.key === 'Escape') { e.preventDefault(); renderEntryGrid(); }
-    else if (e.key === 'Tab') { e.preventDefault(); save(false); }
+    if (e.key === 'Enter') { e.preventDefault(); commit(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); finished = true; setCellDisplay(cell, currentCode); }
+    else if (e.key === 'Tab') { e.preventDefault(); commit(false); }
   });
 
   input.addEventListener('blur', () => {
     setTimeout(() => {
-      if (saved || !cell.querySelector('input')) return;
-      save(false);
+      if (finished || !cell.querySelector('input')) return;
+      commit(false);
     }, 150);
   });
 }

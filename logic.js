@@ -62,6 +62,24 @@ function getWeekDates(start) {
   return dates;
 }
 function formatDate(d) { return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+
+/* ---------- Names ----------
+   Roster names are stored "First Last" (CSV "Last, First" is
+   converted on import), but teachers may also type "Last, First"
+   by hand. Sort key = last name, then full name as tiebreaker,
+   case-insensitive. */
+function lastNameOf(name) {
+  const n = (name || '').trim();
+  if (!n) return '';
+  if (n.includes(',')) return n.split(',')[0].trim();
+  const parts = n.split(/\s+/);
+  return parts[parts.length - 1];
+}
+function byLastName(a, b) {
+  const an = a.name || '', bn = b.name || '';
+  return lastNameOf(an).localeCompare(lastNameOf(bn), undefined, { sensitivity: 'base' })
+    || an.localeCompare(bn, undefined, { sensitivity: 'base' });
+}
 function entryId(studentId, date) { return `${studentId}_${date}`; }
 function weekKeyOf(weekStart) { return dateKey(weekStart); }
 
@@ -220,6 +238,7 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     DEFAULT_CODES, DEFAULT_THRESHOLDS,
     dateKey, parseDateKey, getMonday, addDays, getWeekDates, formatDate, entryId, weekKeyOf,
+    lastNameOf, byLastName,
     calcPoints, effectivePoints, weeklyStats, ladderComment, calcComment,
     parseCSV, parseCSVLine, csvEscape, buildCanvasExportCSV, isBackupStale,
   };
