@@ -55,32 +55,34 @@ def run():
         check("grid sorted by last name", [g["title"] for g in grid] == expected, [g["title"] for g in grid])
         check("grid row numbers fixed 1..6", [g["num"] for g in grid] == ["1.", "2.", "3.", "4.", "5.", "6."], [g["num"] for g in grid])
 
-        # --- Keyboard flow: click Monday cell of row 1, type A, Enter ---
+        # --- Touch flow: clicking a cell opens the picker modal ---
         first_date = page.eval_on_selector("#entry-tbody .code-cell", "c => c.dataset.date")
         page.click(f'#entry-tbody tr:first-child .code-cell[data-date="{first_date}"]')
         page.wait_for_timeout(100)
-        check("input opened in cell 1", page.query_selector("#entry-tbody tr:first-child .code-cell input") is not None)
+        check("click opens code picker", page.eval_on_selector("#code-modal", "m => m.classList.contains('open')"))
+        page.keyboard.press("Escape")
 
+        # --- Keyboard flow: focus a cell, type code, press Enter ---
+        page.focus(f'#entry-tbody tr:first-child .code-cell[data-date="{first_date}"]')
         page.keyboard.type("A")
         page.keyboard.press("Enter")
-        # Focus must move synchronously (this is the iPad-keyboard guarantee)
         focus_info = page.evaluate("""(d) => {
             const ae = document.activeElement;
-            if (!ae || !ae.classList.contains('inline-code-input')) return { ok: false, tag: ae && ae.tagName };
-            const cell = ae.closest('.code-cell'); const row = ae.closest('tr');
+            if (!ae || !ae.classList.contains('code-cell')) return { ok: false, tag: ae && ae.tagName };
+            const cell = ae; const row = ae.closest('tr');
             return { ok: true, date: cell.dataset.date, rowIndex: [...row.parentNode.children].indexOf(row) };
         }""", first_date)
-        check("focus advanced to next student same day (no re-render, keyboard survives)",
+        check("focus advanced to next student same day",
               focus_info.get("ok") and focus_info.get("date") == first_date and focus_info.get("rowIndex") == 1, focus_info)
 
         page.keyboard.type("NP")
         page.keyboard.press("Enter")
         focus2 = page.evaluate("""() => {
             const ae = document.activeElement; const row = ae && ae.closest('tr');
-            return { isInput: !!(ae && ae.classList.contains('inline-code-input')),
+            return { isCell: !!(ae && ae.classList.contains('code-cell')),
                      rowIndex: row ? [...row.parentNode.children].indexOf(row) : -1 };
         }""")
-        check("focus advanced again to row 3", focus2["isInput"] and focus2["rowIndex"] == 2, focus2)
+        check("focus advanced again to row 3", focus2["isCell"] and focus2["rowIndex"] == 2, focus2)
         page.keyboard.press("Escape")
 
         # --- Persistence + in-place Pts/Comment refresh ---
@@ -108,15 +110,15 @@ def run():
         check("entry survives reload", after_reload == "A", after_reload)
 
         # --- Invalid code path: focus stays, nothing saved ---
-        page.click(f'#entry-tbody tr:nth-child(4) .code-cell[data-date="{first_date}"]')
+        page.focus(f'#entry-tbody tr:nth-child(4) .code-cell[data-date="{first_date}"]')
         page.keyboard.type("ZZ")
         page.keyboard.press("Enter")
         invalid_info = page.evaluate("""() => {
             const ae = document.activeElement; const row = ae && ae.closest('tr');
-            return { isInput: !!(ae && ae.classList.contains('inline-code-input')),
+            return { isCell: !!(ae && ae.classList.contains('code-cell')),
                      rowIndex: row ? [...row.parentNode.children].indexOf(row) : -1 };
         }""")
-        check("invalid code keeps focus in same row", invalid_info["isInput"] and invalid_info["rowIndex"] == 3, invalid_info)
+        check("invalid code keeps focus in same row", invalid_info["isCell"] and invalid_info["rowIndex"] == 3, invalid_info)
         page.keyboard.press("Escape")
         db_after = page.evaluate("async () => (await dbGetAll('entries')).length")
         check("invalid code not persisted", db_after == 2, db_after)

@@ -186,7 +186,7 @@ function parseCSV(text) {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
   const header = parseCSVLine(lines[0]);
-  const col = {}; header.forEach((h, i) => { col[h.trim().toLowerCase()] = i; });
+  const col = {}; header.forEach((h, i) => { col[h.replace(/^\uFEFF/, '').trim().toLowerCase()] = i; });
   const sc = col['student'] ?? -1, ic = col['id'] ?? -1;
   if (sc === -1 || ic === -1) return null;
   const rows = [];
