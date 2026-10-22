@@ -423,6 +423,12 @@ html.light .toggle-thumb { transform: translateX(18px); }
     <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">The comment ladder fires the first matching rule, top to bottom. These cutoffs are yours to tune.</p>
     <div id="threshold-settings"></div>
   </div>
+  <div class="settings-section" id="entry-mode-section">
+    <h3>Code Entry</h3>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">What happens when you tap a day cell on the entry grid.</p>
+    <div class="feature-row"><label><input type="radio" name="entry-mode" id="entry-mode-type" value="type"> Type codes — keyboard opens; Enter saves and moves down the column</label></div>
+    <div class="feature-row"><label><input type="radio" name="entry-mode" id="entry-mode-tap" value="tap"> Tap to pick — the Select Code panel opens with a button per code</label></div>
+  </div>
   <div class="settings-section" id="features-section">
     <h3>Features</h3>
     <div class="feature-row"><label><input type="checkbox" id="tier2-toggle"> Tier 2: Print, clear entries, Canvas CSV export</label></div>
@@ -448,7 +454,7 @@ html.light .toggle-thumb { transform: translateX(18px); }
   </div>
   <div class="settings-section">
     <h3>About</h3>
-    <p style="font-size:13px;color:var(--text-dim);">PhysEd Pro v3.2<br>Offline PE grading &amp; participation tracker.<br>IndexedDB storage, priority-ladder comments, manual adjustments, print, custom codes, backup-to-folder.<br>v3.2: last-name sorting, row numbers, iPad keyboard stays up during entry.<br><br>Privacy: this app has no server and transmits nothing. All data stays on this device unless you back it up to a location you choose.</p>
+    <p style="font-size:13px;color:var(--text-dim);">PhysEd Pro v3.3<br>Offline PE grading &amp; participation tracker.<br>IndexedDB storage, priority-ladder comments, manual adjustments, print, custom codes, backup-to-folder.<br>v3.3: choose your code entry style in Settings — type codes (default) or tap to pick.<br><br>Privacy: this app has no server and transmits nothing. All data stays on this device unless you back it up to a location you choose.</p>
   </div>
   <div class="settings-section">
     <h3>Weekly Reset</h3>
@@ -512,6 +518,7 @@ function defaultSettings() {
     codes: DEFAULT_CODES.map(c => ({ ...c, flags: { ...c.flags } })),
     thresholds: { ...DEFAULT_THRESHOLDS },
     tiers: { tier2: true, tier3: true },
+    entryMode: 'type',
   };
 }
 
@@ -528,6 +535,7 @@ function normalizeSettings(s) {
   }
   s.thresholds = Object.assign({ ...DEFAULT_THRESHOLDS }, s.thresholds || {});
   s.tiers = Object.assign({ tier2: true, tier3: true }, s.tiers || {});
+  if (s.entryMode !== 'tap' && s.entryMode !== 'type') s.entryMode = 'type';
   return s;
 }
 
@@ -863,8 +871,12 @@ async function renderEntryGrid() {
   tbody.innerHTML = rows;
   tbody.querySelectorAll('.code-cell').forEach(cell => {
     cell.addEventListener('click', () => {
-      const student = students.find(s => s.id === Number(cell.dataset.student));
-      openPicker(Number(cell.dataset.student), cell.dataset.date, student ? student.name : '', cell.dataset.code);
+      if (settings.entryMode === 'tap') {
+        const student = students.find(s => s.id === Number(cell.dataset.student));
+        openPicker(Number(cell.dataset.student), cell.dataset.date, student ? student.name : '', cell.dataset.code);
+      } else {
+        startInlineEdit(cell);
+      }
     });
     cell.addEventListener('keydown', handleCodeCellKeydown);
   });
@@ -999,6 +1011,10 @@ function applyBufferedCode(cell, code) {
 
 function handleCodeCellKeydown(event) {
   const cell = event.currentTarget;
+  // Ignore events bubbling up from the inline <input> (type mode) —
+  // that input has its own keydown handling; without this guard a
+  // typed code would be processed twice.
+  if (event.target !== cell) return;
   if (codeKeyCell !== cell) clearCodeKeyBuffer();
   codeKeyCell = cell;
 
@@ -1058,71 +1074,97 @@ async function refreshRowStats(studentId) {
   }
 }
 
-function startInlineEdit(cell) {
-  if (cell.querySelector('input')) return;
-  const studentId = parseInt(cell.dataset.student);
-  const date = cell.dataset.date;
-  const currentCode = cell.dataset.code || '';
+function startInlineEdit(startCell) {
+  if (startCell.querySelector('input')) return;
+
+  /* iOS keyboard persistence (the hard-won June 2026 fix): the
+     on-screen keyboard survives only while focus stays on a live
+     input across a real user gesture. So ONE input element is
+     created, handlers are bound ONCE, and on Enter the SAME element
+     is moved into the next student's cell synchronously inside the
+     keydown handler — `cell` is a mutable variable the closures
+     share. No await, no setTimeout, no table rebuild before the
+     focus handoff. Persistence runs in the background and
+     refreshRowStats patches Pts/Comment in place. */
+  let cell = startCell;
+  let originalCode = cell.dataset.code || '';
+  let finished = false;
 
   const input = document.createElement('input');
   input.type = 'text';
-  input.value = currentCode;
   input.className = 'inline-code-input';
   input.setAttribute('autocapitalize', 'characters');
   input.setAttribute('autocorrect', 'off');
   input.setAttribute('autocomplete', 'off');
   input.setAttribute('spellcheck', 'false');
+  input.setAttribute('enterkeyhint', 'next'); // iOS shows a "next" return key
   input.maxLength = 4;
 
-  cell.textContent = '';
-  cell.appendChild(input);
-  input.focus();
-  input.select();
+  const mountInto = (target) => {
+    cell = target;
+    originalCode = cell.dataset.code || '';
+    input.value = originalCode;
+    cell.textContent = '';
+    cell.appendChild(input);
+    input.focus();
+    input.select();
+  };
 
-  let finished = false;
+  /* Returns the normalized code, or null if invalid (toast shown). */
+  const validate = () => {
+    const val = input.value.trim().toUpperCase();
+    if (val === '' || settings.codes.some(c => c.code === val)) return val;
+    toast('Invalid code: ' + val + '. Use: ' + settings.codes.map(c => c.code).join(', '));
+    input.select();
+    return null;
+  };
 
-  /* NOTE: deliberately synchronous up to the focus handoff —
-     no await before startInlineEdit(next), or iOS drops the
-     keyboard. Persistence happens after, in the background. */
   const commit = (advance) => {
     if (finished) return;
-    const val = input.value.trim().toUpperCase();
-    const validCode = val === '' || settings.codes.some(c => c.code === val);
+    const val = validate();
+    if (val === null) return;
 
-    if (!validCode) {
-      toast('Invalid code: ' + val + '. Use: ' + settings.codes.map(c => c.code).join(', '));
-      input.value = currentCode;
-      input.select();
-      return;
-    }
+    const studentId = parseInt(cell.dataset.student);
+    const date = cell.dataset.date;
 
-    finished = true;
-    setCellDisplay(cell, val);
-
-    if (advance) {
-      const allCells = [...document.querySelectorAll(`.code-cell[data-date="${date}"]`)];
-      const idx = allCells.indexOf(cell);
-      if (idx > -1 && idx < allCells.length - 1) startInlineEdit(allCells[idx + 1]);
-    }
-
+    // Background persist — no await before the focus handoff.
     persistCode(studentId, date, val).catch(err => {
       console.error(err);
       toast('Save failed — check console');
     });
+
+    if (advance) {
+      const allCells = [...document.querySelectorAll(`.code-cell[data-date="${date}"]`)];
+      const idx = allCells.indexOf(cell);
+      const next = (idx > -1 && idx < allCells.length - 1) ? allCells[idx + 1] : null;
+      setCellDisplay(cell, val);            // detaches the input from this cell
+      if (next) { mountInto(next); }        // same element, synchronous -> keyboard stays
+      else { finished = true; }             // end of column: keyboard closes, done
+    } else {
+      finished = true;
+      setCellDisplay(cell, val);
+    }
   };
 
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); commit(true); }
-    else if (e.key === 'Escape') { e.preventDefault(); finished = true; setCellDisplay(cell, currentCode); }
+    else if (e.key === 'Escape') { e.preventDefault(); finished = true; setCellDisplay(cell, originalCode); }
     else if (e.key === 'Tab') { e.preventDefault(); commit(false); }
   });
 
   input.addEventListener('blur', () => {
     setTimeout(() => {
-      if (finished || !cell.querySelector('input')) return;
+      // Chromium fires blur when a focused element is DETACHED, which
+      // happens on every Enter-advance (setCellDisplay removes the
+      // input before mountInto re-attaches it). If the input holds
+      // focus again by the time this timeout runs, it was a handoff,
+      // not the user leaving — don't commit.
+      if (finished || document.activeElement === input || !cell.querySelector('input')) return;
       commit(false);
     }, 150);
   });
+
+  mountInto(startCell);
 }
 
 /* ---------- Print (Tier 2) ---------- */
@@ -1191,6 +1233,8 @@ function renderSettings() {
 
   document.getElementById('tier2-toggle').checked = settings.tiers.tier2;
   document.getElementById('tier3-toggle').checked = settings.tiers.tier3;
+  document.getElementById('entry-mode-type').checked = settings.entryMode !== 'tap';
+  document.getElementById('entry-mode-tap').checked = settings.entryMode === 'tap';
   applyTiers();
   updateBackupStatus();
 }
@@ -1222,6 +1266,13 @@ document.getElementById('add-code-btn').addEventListener('click', async () => {
   document.getElementById('new-code-deduction').value = '0';
   ['flag-absence','flag-noDress','flag-noPart','flag-tardy','flag-excused'].forEach(id => document.getElementById(id).checked = false);
   toast(`Custom code ${code} added`); renderSettings();
+});
+
+document.getElementById('entry-mode-type').addEventListener('change', async e => {
+  if (e.target.checked) { settings.entryMode = 'type'; await saveSettings(); toast('Tap a cell to type codes'); }
+});
+document.getElementById('entry-mode-tap').addEventListener('change', async e => {
+  if (e.target.checked) { settings.entryMode = 'tap'; await saveSettings(); toast('Tap a cell to pick from the panel'); }
 });
 
 document.getElementById('tier2-toggle').addEventListener('change', async e => {

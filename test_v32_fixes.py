@@ -55,12 +55,18 @@ def run():
         check("grid sorted by last name", [g["title"] for g in grid] == expected, [g["title"] for g in grid])
         check("grid row numbers fixed 1..6", [g["num"] for g in grid] == ["1.", "2.", "3.", "4.", "5.", "6."], [g["num"] for g in grid])
 
-        # --- Touch flow: clicking a cell opens the picker modal ---
+        # --- Touch flow (v3.3): default click opens the inline typing
+        # input; the Select Code picker only opens in 'tap' entry mode
+        # (covered in test_v33_entry_mode.py) ---
         first_date = page.eval_on_selector("#entry-tbody .code-cell", "c => c.dataset.date")
         page.click(f'#entry-tbody tr:first-child .code-cell[data-date="{first_date}"]')
         page.wait_for_timeout(100)
-        check("click opens code picker", page.eval_on_selector("#code-modal", "m => m.classList.contains('open')"))
+        check("click opens inline typing input (default mode)",
+              page.eval_on_selector("#entry-tbody", "t => !!t.querySelector('.code-cell input.inline-code-input')"))
+        check("click does NOT open code picker in default mode",
+              not page.eval_on_selector("#code-modal", "m => m.classList.contains('open')"))
         page.keyboard.press("Escape")
+        page.wait_for_timeout(200)
 
         # --- Keyboard flow: focus a cell, type code, press Enter ---
         page.focus(f'#entry-tbody tr:first-child .code-cell[data-date="{first_date}"]')

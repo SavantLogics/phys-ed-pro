@@ -1,4 +1,4 @@
-# PhysEd Pro v3.1
+# PhysEd Pro v3.3
 
 Offline-first PE attendance, dress-out, and participation tracker for physical education teachers. Replaces manual grading spreadsheets with a tap-fast, tablet-and-desktop tool that exports straight to Canvas.
 
@@ -114,6 +114,13 @@ node tests/migration_test.js   # v2 -> v3 migration scenarios
 Also open `tests.html` in a browser (via a local server, e.g. `python3 -m http.server`) to run the same suites against real browser IndexedDB. The Python file `tests/comment_oracle.py` is the **test oracle**: an independent re-implementation of the comment ladder; the JS engine must match it exactly across `tests/cases.json` (32 student-week cases).
 
 Last full run: **77 Node unit tests, 32/32 Python cross-check, 30 headless UI smoke tests, 13 migration tests, browser suite green — 0 failures.**
+
+## v3.3 changes
+
+- **Code entry is typing-first again.** Tapping a day cell opens the inline input (on-screen keyboard on iPad; Enter saves and moves down the column) — the flow PE staff use for roll call. The tap-to-pick "Select Code" panel is still available: Settings -> Code Entry -> "Tap to pick".
+- The same-element focus handoff from v3.2 is restored for Enter-advance, so the iPad keyboard stays up between students (a recreated input risks iOS dismissing the keyboard).
+- Focus-typing on a highlighted cell (hardware keyboards) now ignores keystrokes while the inline input is open, preventing double entry.
+- Service worker cache bumped to v3-3.
 
 ## v3.1 changes
 
